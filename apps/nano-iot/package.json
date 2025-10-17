@@ -90,8 +90,10 @@
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
+    "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "joi": "^17.9.2",
     "fs-extra": "^11.3.2",
     "pem": "^1.14.8",
     "pigeon-mqtt-nest": "1.0.17",

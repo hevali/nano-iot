@@ -1,4 +1,5 @@
-import { Module, OnApplicationBootstrap } from '@nestjs/common';
+import { Logger, Module, OnApplicationBootstrap } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
@@ -30,25 +31,14 @@ const CERT_DIR = path.join(__dirname, '..', 'certs');
   ],
 })
 export class MqttModule implements OnApplicationBootstrap {
-  constructor(private broker: Aedes) {}
+  private logger = new Logger(MqttModule.name);
+
+  constructor(private broker: Aedes, private readonly configService: ConfigService) {}
 
   async onApplicationBootstrap() {
-    let rootKey = process.env['APP_MQTT_ROOT_KEY'] || '';
-    let rootCert = process.env['APP_MQTT_ROOT_CERT'] || '';
-
-    if (!rootKey && process.env['NODE_ENV'] === 'production') {
-      throw new Error('MQTT root key missing');
-    }
-
-    const keyPath = path.join(CERT_DIR, 'root.key');
-    rootKey = await fs.readFile(keyPath, 'utf-8');
-
-    if (!rootCert && process.env['NODE_ENV'] === 'production') {
-      throw new Error('MQTT root cert missing');
-    }
-
-    const certPath = path.join(CERT_DIR, 'root.crt');
-    rootCert = await fs.readFile(certPath, 'utf-8');
+    const rootKey = this.configService.get<string>('APP_MQTT_ROOT_KEY', '');
+    const rootCert = this.configService.get<string>('APP_MQTT_ROOT_CERT', '');
+    const mqttPort = this.configService.get<number>('APP_MQTT_PORT', 1884);
 
     createServer(this.broker, {
       tls: {
@@ -57,6 +47,8 @@ export class MqttModule implements OnApplicationBootstrap {
         ca: [rootCert],
         requestCert: true,
       },
-    }).listen(1884);
+    }).listen(mqttPort, () => {
+      this.logger.log(`MQTT broker started and listening on port ${mqttPort}`);
+    });
   }
 }

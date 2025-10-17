@@ -1,16 +1,39 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 import Aedes, { Client } from 'aedes';
+import { IncomingMessage } from 'http';
 import { promisify } from 'util';
 
+interface MqttRequest extends IncomingMessage {
+  connDetails: {
+    cert: {
+      subject: {
+        CN: string;
+      };
+    };
+    certAuthorized: boolean;
+  };
+}
+
 @Injectable()
-export class MqttService {
-  constructor(private aedes: Aedes) {
-    aedes.preConnect = (client, packet, cb) => {
-      cb(null, client.req?.connDetails.certAuthorized);
+export class MqttService implements OnModuleInit {
+  private logger = new Logger(MqttService.name);
+
+  constructor(private aedes: Aedes) {}
+
+  onModuleInit() {
+    this.aedes.preConnect = (client, packet, cb) => {
+      if ((client.req as MqttRequest).connDetails.certAuthorized) {
+        this.logger.debug(`Client ${this.getClientId(client)} connected`);
+        cb(null, true);
+        return;
+      }
+
+      this.logger.warn(`Client connection rejected: invalid certificate`);
+      cb(new Error('Invalid client certificate'), false);
     };
 
-    aedes.authorizePublish = (client, packet, cb) => {
+    this.aedes.authorizePublish = (client, packet, cb) => {
       if (packet.topic.startsWith('$SYS/')) {
         cb(new Error('Topic is reserved'));
         return;
@@ -22,6 +45,8 @@ export class MqttService {
       }
 
       const clientId = this.getClientId(client);
+      this.logger.debug(`Client ${clientId} publishing to topic ${packet.topic}`);
+
       cb(
         this.match(`iot/devices/${clientId}/#`, packet.topic)
           ? null
@@ -29,15 +54,17 @@ export class MqttService {
       );
     };
 
-    aedes.authorizeSubscribe = (client, sub, cb) => {
+    this.aedes.authorizeSubscribe = (client, sub, cb) => {
       const clientId = this.getClientId(client);
+      this.logger.debug(`Client ${clientId} subscribing to topic ${sub.topic}`);
+
       cb(
         this.match(`iot/devices/${clientId}/#`, sub.topic) ? null : new Error('Topic not allowed'),
         sub
       );
     };
 
-    aedes.subscribe(
+    this.aedes.subscribe(
       `iot/devices/+/rpc/d2c`,
       (packet, cb) => {
         const clientId = packet.topic.split('/')[2];
@@ -45,9 +72,7 @@ export class MqttService {
         try {
           const payload = JSON.parse(packet.payload.toString());
 
-          console.log(clientId, payload);
-
-          aedes.publish(
+          this.aedes.publish(
             {
               topic: [...packet.topic.split('/').slice(0, 4), 'c2d'].join('/'),
               payload: JSON.stringify(payload),
@@ -67,12 +92,12 @@ export class MqttService {
           this.onError(clientId, new Error('Invalid JSON'));
         }
       },
-      () => console.log('Subscribed')
+      () => this.logger.log('Subscribed to topic iot/devices/+/rpc/d2c')
     );
   }
 
   private async onError(clientId: string, error: Error) {
-    console.warn(`Error client ${clientId}: ${error.message}`);
+    this.logger.warn(`Error client ${clientId}: ${error.message}`);
 
     await promisify((cb) =>
       this.aedes.publish(
@@ -90,7 +115,7 @@ export class MqttService {
   }
 
   private getClientId(client: Client): string {
-    return client.req?.connDetails.cert.subject.CN;
+    return (client.req as MqttRequest).connDetails.cert.subject.CN;
   }
 
   // https://github.com/ralphtheninja/mqtt-match/blob/master/index.js

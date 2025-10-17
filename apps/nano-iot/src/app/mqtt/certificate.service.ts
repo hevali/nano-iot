@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { promisified as pem } from 'pem';
 import * as fs from 'fs-extra';
 import * as path from 'path';
@@ -27,61 +28,17 @@ const CERT_DIR = path.join(__dirname, '..', 'certs');
 @Injectable()
 export class CertificateService implements OnModuleInit {
   private logger = new Logger(CertificateService.name);
-
   private rootKey = '';
   private rootCert = '';
 
+  constructor(private readonly configService: ConfigService) {}
+
   async onModuleInit() {
-    this.rootKey = process.env['APP_MQTT_ROOT_KEY'] || '';
-    this.rootCert = process.env['APP_MQTT_ROOT_CERT'] || '';
+    this.rootKey = this.configService.get<string>('APP_MQTT_ROOT_KEY', '');
+    this.rootCert = this.configService.get<string>('APP_MQTT_ROOT_CERT', '');
 
-    if (!this.rootKey) {
-      if (process.env['NODE_ENV'] === 'production') {
-        throw new Error('MQTT root key missing');
-      }
-
-      const keyPath = path.join(CERT_DIR, 'root.key');
-      const exists = await fs.exists(keyPath);
-      if (!exists) {
-        this.logger.warn('Creating temporary MQTT key');
-
-        this.rootKey = (await pem.createPrivateKey(2048)).key;
-        await fs.outputFile(keyPath, this.rootKey);
-      } else {
-        this.logger.warn('Using local MQTT key');
-
-        this.rootKey = await fs.readFile(keyPath, 'utf-8');
-      }
-    }
-
-    if (!this.rootCert) {
-      if (process.env['NODE_ENV'] === 'production') {
-        throw new Error('MQTT root certificate missing');
-      }
-
-      const certPath = path.join(CERT_DIR, 'root.crt');
-      const exists = await fs.exists(certPath);
-      if (!exists) {
-        this.logger.warn('Creating temporary MQTT certificate');
-
-        this.rootCert = (
-          await pem.createCertificate({
-            commonName: 'nano-iot',
-            serviceKey: this.rootKey,
-            selfSigned: true,
-            config: CERT_CONFIG,
-          })
-        ).certificate;
-        await fs.outputFile(certPath, this.rootCert);
-      } else {
-        this.logger.warn('Using local MQTT certificate');
-
-        this.rootCert = await fs.readFile(certPath, 'utf-8');
-      }
-    }
-
-    const certPublicKey = await pem.getPublicKey(this.rootCert);
     const keyPublicKey = await pem.getPublicKey(this.rootKey);
+    const certPublicKey = await pem.getPublicKey(this.rootCert);
 
     if (certPublicKey.publicKey !== keyPublicKey.publicKey) {
       throw new Error('Private key and certificate do not match');
