@@ -66,34 +66,35 @@ export class MqttService implements OnModuleInit {
 
     this.aedes.subscribe(
       `iot/devices/+/rpc/d2c`,
-      (packet, cb) => {
+      async (packet, cb) => {
         const clientId = packet.topic.split('/')[2];
 
         try {
           const payload = JSON.parse(packet.payload.toString());
 
-          this.aedes.publish(
-            {
-              topic: [...packet.topic.split('/').slice(0, 4), 'c2d'].join('/'),
-              payload: JSON.stringify(payload),
-              cmd: 'publish',
-              qos: 0,
-              dup: false,
-              retain: true,
-            },
-            (err) => {
-              if (err) {
-                this.onError(clientId, err);
-              }
-              cb();
-            }
-          );
+          await this.publish(`iot/devices/${clientId}/rpc/c2d`, payload);
         } catch {
-          this.onError(clientId, new Error('Invalid JSON'));
+          await this.onError(clientId, new Error('Invalid JSON'));
         }
       },
       () => this.logger.log('Subscribed to topic iot/devices/+/rpc/d2c')
     );
+  }
+
+  private async publish(topic: string, message: any) {
+    await promisify((cb) =>
+      this.aedes.publish(
+        {
+          topic: topic,
+          payload: JSON.stringify(message),
+          cmd: 'publish',
+          qos: 0,
+          dup: false,
+          retain: true,
+        },
+        (err) => cb(err, null)
+      )
+    )();
   }
 
   private async onError(clientId: string, error: Error) {

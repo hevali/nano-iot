@@ -45,10 +45,7 @@ export class CertificateService implements OnModuleInit {
     }
 
     const cert = await pem.readCertificateInfo(this.rootCert);
-    this.logger.log(cert);
-    this.logger.debug(certPublicKey.publicKey);
-
-    await this.createCertificate('hvl');
+    this.logger.debug(cert);
   }
 
   async createCertificate(clientId: string) {
@@ -63,7 +60,6 @@ export class CertificateService implements OnModuleInit {
 
     this.logger.log(`Created certificate for client ${clientId}`);
     this.logger.debug(certificate);
-    this.logger.debug(key);
 
     const ok = await pem.verifySigningChain(certificate, [this.rootCert]);
     if (!ok) {
