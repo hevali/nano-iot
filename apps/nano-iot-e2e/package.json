@@ -1,0 +1,26 @@
+{
+  "name": "@nano-iot/nano-iot-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "implicitDependencies": [
+      "@nano-iot/nano-iot"
+    ],
+    "targets": {
+      "e2e": {
+        "executor": "@nx/jest:jest",
+        "outputs": [
+          "{projectRoot}/test-output/jest/coverage"
+        ],
+        "options": {
+          "jestConfig": "apps/nano-iot-e2e/jest.config.ts",
+          "passWithNoTests": true
+        },
+        "dependsOn": [
+          "@nano-iot/nano-iot:build",
+          "@nano-iot/nano-iot:serve"
+        ]
+      }
+    }
+  }
+}
