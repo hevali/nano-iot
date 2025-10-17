@@ -4,11 +4,11 @@ import { MqttJsonRpc, MqttJsonRpcClientId, MqttJsonRpcParams } from './mqtt.deco
 @Controller()
 export class EchoController {
   @MqttJsonRpc('echo')
-  echo(@MqttJsonRpcParams() message: string, @MqttJsonRpcClientId() clientId: string) {
+  echo(@MqttJsonRpcParams('message') message: string, @MqttJsonRpcClientId() clientId: string) {
     if (message === 'error') {
       throw new Error('Echo error');
     }
 
-    return { answer: `Hello ${clientId}}`, original: message };
+    return { greeting: `Hello ${clientId}}`, message };
   }
 }

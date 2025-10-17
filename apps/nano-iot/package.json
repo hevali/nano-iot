@@ -96,7 +96,7 @@
     "@nestjs/platform-express": "^11.0.0",
     "fs-extra": "^11.3.2",
     "joi": "^17.9.2",
-    "json-rpc-2.0": "^1.7.1",
+    "jsonrpc-lite": "^2.2.0",
     "pem": "^1.14.8",
     "pigeon-mqtt-nest": "1.0.17",
     "reflect-metadata": "^0.1.13",

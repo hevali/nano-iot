@@ -45,7 +45,6 @@ export class MqttService implements OnModuleInit {
       }
 
       const clientId = this.getClientId(client);
-      this.logger.debug(`Client ${clientId} publishing to topic ${packet.topic}`);
 
       cb(
         this.match(`iot/devices/${clientId}/#`, packet.topic)

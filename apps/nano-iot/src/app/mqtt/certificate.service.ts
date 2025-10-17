@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { promisified as pem } from 'pem';
 import * as fs from 'fs-extra';
@@ -7,27 +7,12 @@ import * as path from 'path';
 const CERT_DIR = path.join(__dirname, '..', 'certs');
 
 @Injectable()
-export class CertificateService implements OnModuleInit {
+export class CertificateService {
   private logger = new Logger(CertificateService.name);
-  private rootKey = '';
-  private rootCert = '';
+  private rootKey = this.configService.get<string>('APP_MQTT_ROOT_KEY', '');
+  private rootCert = this.configService.get<string>('APP_MQTT_ROOT_CERT', '');
 
   constructor(private readonly configService: ConfigService) {}
-
-  async onModuleInit() {
-    this.rootKey = this.configService.get<string>('APP_MQTT_ROOT_KEY', '');
-    this.rootCert = this.configService.get<string>('APP_MQTT_ROOT_CERT', '');
-
-    const keyPublicKey = await pem.getPublicKey(this.rootKey);
-    const certPublicKey = await pem.getPublicKey(this.rootCert);
-
-    if (certPublicKey.publicKey !== keyPublicKey.publicKey) {
-      throw new Error('Private key and certificate do not match');
-    }
-
-    const cert = await pem.readCertificateInfo(this.rootCert);
-    this.logger.debug(cert);
-  }
 
   async createCertificate(clientId: string) {
     const { key } = await pem.createPrivateKey(2048);

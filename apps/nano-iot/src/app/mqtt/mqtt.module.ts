@@ -7,8 +7,9 @@ import { createServer } from 'aedes-server-factory';
 import { MqttService } from './mqtt.service';
 import { CertificateService } from './certificate.service';
 import { EchoController } from './echo.controller';
-import { RpcService } from './rpc.service';
+import { RpcDiscoveryService, RpcService } from './rpc.service';
 import { DiscoveryModule } from '@golevelup/nestjs-discovery';
+import { promisified as pem } from 'pem';
 
 @Module({
   imports: [DiscoveryModule],
@@ -16,6 +17,7 @@ import { DiscoveryModule } from '@golevelup/nestjs-discovery';
     MqttService,
     CertificateService,
     RpcService,
+    RpcDiscoveryService,
     {
       provide: Aedes,
       useFactory: () => {
@@ -30,6 +32,7 @@ import { DiscoveryModule } from '@golevelup/nestjs-discovery';
       },
     },
   ],
+  exports: [RpcService, CertificateService],
   controllers: [EchoController],
 })
 export class MqttModule implements OnApplicationBootstrap {
@@ -42,15 +45,28 @@ export class MqttModule implements OnApplicationBootstrap {
     const rootCert = this.configService.get<string>('APP_MQTT_ROOT_CERT', '');
     const mqttPort = this.configService.get<number>('APP_MQTT_PORT', 1884);
 
-    createServer(this.broker, {
-      tls: {
-        key: rootKey,
-        cert: rootCert,
-        ca: [rootCert],
-        requestCert: true,
-      },
-    }).listen(mqttPort, () => {
-      this.logger.log(`MQTT broker started and listening on port ${mqttPort}`);
+    const keyPublicKey = await pem.getPublicKey(rootKey);
+    const certPublicKey = await pem.getPublicKey(rootCert);
+
+    if (certPublicKey.publicKey !== keyPublicKey.publicKey) {
+      throw new Error('Private key and certificate do not match');
+    }
+
+    const cert = await pem.readCertificateInfo(rootCert);
+    this.logger.debug(cert);
+
+    await new Promise<void>((res) => {
+      createServer(this.broker, {
+        tls: {
+          key: rootKey,
+          cert: rootCert,
+          ca: [rootCert],
+          requestCert: true,
+        },
+      }).listen(mqttPort, () => {
+        this.logger.log(`MQTT broker started and listening on port ${mqttPort}`);
+        res();
+      });
     });
   }
 }
