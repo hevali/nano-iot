@@ -6,11 +6,16 @@ import { createBroker } from 'aedes';
 import { createServer } from 'aedes-server-factory';
 import { MqttService } from './mqtt.service';
 import { CertificateService } from './certificate.service';
+import { EchoController } from './echo.controller';
+import { RpcService } from './rpc.service';
+import { DiscoveryModule } from '@golevelup/nestjs-discovery';
 
 @Module({
+  imports: [DiscoveryModule],
   providers: [
     MqttService,
     CertificateService,
+    RpcService,
     {
       provide: Aedes,
       useFactory: () => {
@@ -25,6 +30,7 @@ import { CertificateService } from './certificate.service';
       },
     },
   ],
+  controllers: [EchoController],
 })
 export class MqttModule implements OnApplicationBootstrap {
   private logger = new Logger(MqttModule.name);
