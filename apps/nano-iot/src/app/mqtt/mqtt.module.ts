@@ -1,15 +1,11 @@
 import { Logger, Module, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as fs from 'fs-extra';
-import * as path from 'path';
 
 import Aedes from 'aedes';
 import { createBroker } from 'aedes';
 import { createServer } from 'aedes-server-factory';
 import { MqttService } from './mqtt.service';
 import { CertificateService } from './certificate.service';
-
-const CERT_DIR = path.join(__dirname, '..', 'certs');
 
 @Module({
   providers: [

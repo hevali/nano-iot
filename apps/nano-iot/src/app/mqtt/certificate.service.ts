@@ -4,25 +4,6 @@ import { promisified as pem } from 'pem';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
-const CERT_CONFIG = `
-[ req ]
-req_extensions     = v3_req
-default_bits       = 2048 # default key size in bits.
-distinguished_name = req_distinguished_name # the name of the tag in this file, which specifies certificates fields description during certificate creation and eventually set some default values.
-string_mask        = utf8only # permitted string type mask.
-default_md         = sha256 # hash function.
-x509_extensions    = v3_ca # the name of the tag in this file, which specifies certificates extensions, which will be added to the created certificate by default.
-
-[ req_distinguished_name ]
-commonName     = nano-iot
-commonName_max = 64
-
-[ v3_req ]
-subjectKeyIdentifier   = hash # subject key value will be calculated using hash funtion. It's the recommended setting by PKIX.
-authorityKeyIdentifier = keyid:always,issuer # The subject key identifier will be copied from the parent certificate. It's the recommended setting by PKIX.
-basicConstraints       = critical, CA:true, pathlen:10 # "critical" specifies that the extension is important and must be read by the platform. CA says if it is the CA certificate so it can be used to sign different certificates. "pathlen" specifies the maximum path length between this certificate and the device certificate in the chain of certificates during authentication. Path length is set here only to show how it is done. If you do not want to specify max path length, you can keep only the "basicConstraints = critical, CA:true" part here.
-keyUsage               = digitalSignature, cRLSign, keyCertSign # specifies permitted key usages.`;
-
 const CERT_DIR = path.join(__dirname, '..', 'certs');
 
 @Injectable()
