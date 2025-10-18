@@ -11,6 +11,8 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { AnyExceptionFilter, ZodErrorFilter, TypeormErrorFilter } from './lib/filters';
 import { CONFIG_SCHEMA } from './lib/config';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
+import { AgentModule } from './agent/agent.module';
+import { DeviceMethodEntityMigration1760757514002 } from './migrations/1760757514002-DeviceMethod';
 
 @Module({
   imports: [
@@ -28,13 +30,14 @@ import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
       namingStrategy: new SnakeNamingStrategy(),
       autoLoadEntities: true,
       synchronize: false,
-      migrations: [DeviceEntityMigration1760757514001],
+      migrations: [DeviceEntityMigration1760757514001, DeviceMethodEntityMigration1760757514002],
       migrationsRun: true,
       migrationsTableName: '_migrations',
       migrationsTransactionMode: 'each',
     }),
     MqttModule,
     DeviceModule,
+    AgentModule,
   ],
   providers: [
     {

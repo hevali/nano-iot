@@ -57,8 +57,12 @@ export class MqttServerService implements OnModuleInit {
           meta,
           async (packet, callback) => {
             try {
-              const payload = JSON.parse(packet.payload.toString());
-              await handler(packet.topic, payload);
+              let payload = null;
+              try {
+                payload = JSON.parse(packet.payload.toString());
+              } catch {}
+
+              await handler(packet.topic, payload, packet.payload);
             } catch (e) {
               this.logger.error(`Error handling message on topic ${packet.topic}: ${e}`);
             }
@@ -97,7 +101,8 @@ export class MqttServerService implements OnModuleInit {
       const clientId = this.getClientId(client);
 
       cb(
-        this.match(`iot/devices/${clientId}/#`, packet.topic)
+        // TODO: Remove chat topic exception
+        this.match(`iot/devices/${clientId}/#`, packet.topic) || packet.topic.startsWith('chat')
           ? null
           : new Error('Topic not allowed')
       );
@@ -108,18 +113,21 @@ export class MqttServerService implements OnModuleInit {
       this.logger.debug(`Client ${clientId} subscribing to topic ${sub.topic}`);
 
       cb(
-        this.match(`iot/devices/${clientId}/#`, sub.topic) ? null : new Error('Topic not allowed'),
+        // TODO: Remove chat topic exception
+        this.match(`iot/devices/${clientId}/#`, sub.topic) || sub.topic.startsWith('chat')
+          ? null
+          : new Error('Topic not allowed'),
         sub
       );
     };
   }
 
-  async publish(topic: string, message: Record<string, any>) {
+  async publish(topic: string, message: string | Record<string, any>) {
     await promisify((cb) =>
       this.aedes.publish(
         {
           topic: topic,
-          payload: JSON.stringify(message),
+          payload: typeof message === 'string' ? message : JSON.stringify(message),
           cmd: 'publish',
           qos: 0,
           dup: false,
@@ -130,13 +138,20 @@ export class MqttServerService implements OnModuleInit {
     )();
   }
 
-  async subscribe(topic: string, handler: (topic: string, payload: unknown) => void) {
+  async subscribe(
+    topic: string,
+    handler: (topic: string, payload: unknown, rawPayload: string | Buffer<ArrayBufferLike>) => void
+  ) {
     await promisify<void>((cb) =>
       this.aedes.subscribe(
         topic,
         (packet, cb) => {
-          const payload = JSON.parse(packet.payload.toString());
-          handler(packet.topic, payload);
+          let payload = null;
+          try {
+            payload = JSON.parse(packet.payload.toString());
+          } catch {}
+
+          handler(packet.topic, payload, packet.payload);
           cb();
         },
         () => cb(null)
@@ -174,7 +189,7 @@ export class MqttServerService implements OnModuleInit {
 export class MqttService {
   constructor(private mqttServerService: MqttServerService) {}
 
-  async publish(topic: string, message: Record<string, any>) {
+  async publish(topic: string, message: string | Record<string, any>) {
     await this.mqttServerService.publish(topic, message);
   }
 

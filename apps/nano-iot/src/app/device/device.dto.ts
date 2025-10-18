@@ -4,10 +4,23 @@ import { zDate } from '../lib/api';
 
 export const DevicePropetiesSchema = z.record(z.string(), z.any());
 
+export const DeviceMethodSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  // TODO: JSON-RPC schema
+  definition: z.object({
+    params: z.union([z.array(z.any()), z.record(z.any(), z.any())]).optional(),
+    result: z.any(),
+  }),
+});
+
+export class DeviceMethodDto extends createZodDto(DeviceMethodSchema) {}
+
 const DeviceDtoSchema = z.object({
   id: z.string(),
   createdAt: zDate(),
   properties: DevicePropetiesSchema,
+  methods: DeviceMethodSchema.array(),
 });
 
 export class DeviceDto extends createZodDto(DeviceDtoSchema) {}

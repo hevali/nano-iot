@@ -1,27 +1,31 @@
 import { ConflictException, Injectable, OnModuleInit } from '@nestjs/common';
 import { CertificateService } from '../mqtt/certificate.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeviceEntity } from './device.entity';
+import { DeviceEntity, DeviceMethodEntity } from './device.entity';
 import { Repository } from 'typeorm';
-import { DeviceDto, DeviceWithCredentialsDto } from './device.dto';
+import { DeviceDto, DeviceMethodDto, DeviceWithCredentialsDto } from './device.dto';
 import { MqttService } from '../mqtt/mqtt.service';
+import { RpcService } from '../mqtt/rpc.service';
+import { RpcParams } from 'jsonrpc-lite';
 
 @Injectable()
 export class DeviceService {
   constructor(
     @InjectRepository(DeviceEntity) private deviceRepo: Repository<DeviceEntity>,
+    @InjectRepository(DeviceEntity) private deviceMethodRepo: Repository<DeviceMethodEntity>,
     private certificateService: CertificateService,
-    private mqttService: MqttService
+    private mqttService: MqttService,
+    private rpcService: RpcService
   ) {}
 
   async getDevices() {
-    const devices = await this.deviceRepo.find();
-    return devices.map((d) => this.toDto(d));
+    const devices = await this.deviceRepo.find({ relations: ['methods'] });
+    return devices.map((d) => this.toDeviceDto(d));
   }
 
   async getDevice(id: string) {
-    const device = await this.deviceRepo.findOneByOrFail({ id });
-    return this.toDto(device);
+    const device = await this.deviceRepo.findOneOrFail({ where: { id }, relations: ['methods'] });
+    return this.toDeviceDto(device);
   }
 
   async createDevice(id: string) {
@@ -40,23 +44,50 @@ export class DeviceService {
   }
 
   async setDeviceProperties(id: string, properties: Record<string, any>) {
-    const device = await this.deviceRepo.findOneByOrFail({ id });
+    const device = await this.deviceRepo.findOneOrFail({ where: { id }, relations: ['methods'] });
 
     await this.deviceRepo.update({ id }, { properties });
     await this.mqttService.publish(`iot/devices/${id}/properties/desired`, properties);
 
-    return this.toDto({ ...device, properties });
+    return this.toDeviceDto({ ...device, properties });
   }
 
   async reportDeviceProperties(id: string, properties: Record<string, any>) {
     await this.deviceRepo.update({ id }, { properties });
   }
 
-  private toDto(entity: DeviceEntity): DeviceDto {
+  async reportDeviceMethods(id: string, methods: any[]) {
+    const device = await this.deviceRepo.findOneBy({ id });
+    if (device) {
+      await this.deviceMethodRepo.manager.transaction(async (em) => {
+        const repo = em.getRepository(DeviceMethodEntity);
+        await repo.delete({ deviceId: device.id });
+        await repo.save(methods.map((m) => ({ ...m, deviceId: device.id })));
+      });
+    }
+  }
+
+  async callDeviceMethod(id: string, method: string, params: RpcParams) {
+    const device = await this.deviceRepo.findOneByOrFail({ id });
+
+    const result = await this.rpcService.callDeviceMethod(device.id, method, params);
+    return result;
+  }
+
+  private toDeviceDto(entity: DeviceEntity): DeviceDto {
     return {
       id: entity.id,
       createdAt: entity.createdAt,
       properties: entity.properties,
+      methods: entity.methods.map((m) => this.toDeviceMethodDto(m)),
+    };
+  }
+
+  private toDeviceMethodDto(entity: DeviceMethodEntity): DeviceMethodDto {
+    return {
+      name: entity.name,
+      description: entity.description,
+      definition: entity.definition as any,
     };
   }
 

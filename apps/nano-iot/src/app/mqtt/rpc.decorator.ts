@@ -9,11 +9,12 @@ import {
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { ParamsFactory } from '@nestjs/core';
 
-export const MQTT_JSON_RPC_PARAMS_TYPE = 0;
-export const MQTT_JSON_RPC_CLIENT_ID_TYPE = 1;
-
 export const JSON_MQTT_TOPIC_TYPE = 0;
 export const JSON_MQTT_PAYLOAD_TYPE = 1;
+export const JSON_MQTT_RAW_PAYLOAD_TYPE = 2;
+
+export const MQTT_JSON_RPC_PARAMS_TYPE = 0;
+export const MQTT_JSON_RPC_CLIENT_ID_TYPE = 1;
 
 export const MQTT_SUBSCRIBE_TOPIC_META_KEY = 'mqtt.subscribe.topic';
 export const MQTT_JSON_RPC_METHOD_META_KEY = 'mqtt.rpc.method';
@@ -66,6 +67,10 @@ export function JsonMqttTopic(): ParameterDecorator {
   return createParamDecorator(JSON_MQTT_TOPIC_TYPE);
 }
 
+export function JsonMqttRawPayload(): ParameterDecorator {
+  return createParamDecorator(JSON_MQTT_RAW_PAYLOAD_TYPE);
+}
+
 export const JSON_MQTT_FACTORY: ParamsFactory = {
   exchangeKeyForValue(type: number, data: ParamData, args: any[]) {
     if (!args) {
@@ -77,6 +82,8 @@ export const JSON_MQTT_FACTORY: ParamsFactory = {
       index = 0;
     } else if (type === JSON_MQTT_PAYLOAD_TYPE) {
       index = 1;
+    } else if (type === JSON_MQTT_RAW_PAYLOAD_TYPE) {
+      index = 2;
     }
 
     return data && !(typeof data === 'object' && data !== null) ? args[index]?.[data] : args[index];

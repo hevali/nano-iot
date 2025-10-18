@@ -4,6 +4,7 @@ import { ApiBody, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import {
   CreateDeviceDto,
   DeviceDto,
+  DeviceMethodSchema,
   DevicePropetiesSchema,
   DeviceWithCredentialsDto,
 } from './device.dto';
@@ -60,5 +61,14 @@ export class DeviceController {
   ) {
     const id = topic.split('/')[2];
     await this.deviceService.reportDeviceProperties(id, properties);
+  }
+
+  @JsonMqttSubscribe('iot/devices/+/rpc/supported')
+  async onDeviceMethods(
+    @JsonMqttTopic() topic: string,
+    @JsonMqttPayload(new ZodValidationPipe(DeviceMethodSchema.array())) methods: any[]
+  ) {
+    const id = topic.split('/')[2];
+    await this.deviceService.reportDeviceMethods(id, methods);
   }
 }
