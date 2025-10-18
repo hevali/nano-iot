@@ -1,14 +1,14 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
 import { DeviceService } from './device.service';
+import { ApiBody, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import {
-  ApiBody,
-  ApiCreatedResponse,
-  ApiNoContentResponse,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
-import { CreateDeviceDto, DeviceDto, DeviceWithCredentialsDto } from './device.dto';
-import { ZodResponse } from 'nestjs-zod';
+  CreateDeviceDto,
+  DeviceDto,
+  DevicePropetiesSchema,
+  DeviceWithCredentialsDto,
+} from './device.dto';
+import { ZodResponse, ZodValidationPipe } from 'nestjs-zod';
+import { JsonMqttPayload, JsonMqttSubscribe, JsonMqttTopic } from '../mqtt/rpc.decorator';
 
 @Controller('devices')
 @ApiTags('Devices')
@@ -51,5 +51,14 @@ export class DeviceController {
   async updateDeviceProperties(@Param('id') id: string, @Body() properties: Record<string, any>) {
     const device = await this.deviceService.setDeviceProperties(id, properties);
     return device.properties;
+  }
+
+  @JsonMqttSubscribe('iot/devices/+/properties/reported')
+  async onDeviceProperties(
+    @JsonMqttTopic() topic: string,
+    @JsonMqttPayload(new ZodValidationPipe(DevicePropetiesSchema)) properties: Record<string, any>
+  ) {
+    const id = topic.split('/')[2];
+    await this.deviceService.reportDeviceProperties(id, properties);
   }
 }

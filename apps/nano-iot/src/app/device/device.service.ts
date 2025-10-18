@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, OnModuleInit } from '@nestjs/common';
 import { CertificateService } from '../mqtt/certificate.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeviceEntity } from './device.entity';
@@ -40,10 +40,16 @@ export class DeviceService {
   }
 
   async setDeviceProperties(id: string, properties: Record<string, any>) {
-    await this.deviceRepo.update({ id }, { properties });
     const device = await this.deviceRepo.findOneByOrFail({ id });
-    await this.mqttService.publish(`iot/devices/${id}/properties`, properties);
-    return this.toDto(device);
+
+    await this.deviceRepo.update({ id }, { properties });
+    await this.mqttService.publish(`iot/devices/${id}/properties/desired`, properties);
+
+    return this.toDto({ ...device, properties });
+  }
+
+  async reportDeviceProperties(id: string, properties: Record<string, any>) {
+    await this.deviceRepo.update({ id }, { properties });
   }
 
   private toDto(entity: DeviceEntity): DeviceDto {

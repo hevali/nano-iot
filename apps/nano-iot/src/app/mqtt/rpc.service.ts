@@ -4,7 +4,7 @@ import { ExternalContextCreator } from '@nestjs/core';
 import Aedes from 'aedes';
 import * as JSONRpc from 'jsonrpc-lite';
 import { promisify } from 'util';
-import { MQTT_JSON_RPC_METHOD_META_KEY, PARAMS_FACTORY } from './rpc.decorator';
+import { MQTT_JSON_RPC_METHOD_META_KEY, MQTT_JSON_RPC_PARAMS_FACTORY } from './rpc.decorator';
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { randomUUID } from 'crypto';
 
@@ -45,7 +45,7 @@ export class RpcDiscoveryService implements OnModuleInit {
         discoveredMethod.handler,
         discoveredMethod.methodName,
         ROUTE_ARGS_METADATA,
-        PARAMS_FACTORY,
+        MQTT_JSON_RPC_PARAMS_FACTORY,
         undefined,
         undefined,
         undefined,

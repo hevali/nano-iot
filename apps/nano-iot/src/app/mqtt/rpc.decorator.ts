@@ -10,11 +10,15 @@ import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { ParamsFactory } from '@nestjs/core';
 
 export const MQTT_JSON_RPC_PARAMS_TYPE = 0;
-export const MQTT_JSON_RPC_CLIENTID_TYPE = 1;
+export const MQTT_JSON_RPC_CLIENT_ID_TYPE = 1;
 
+export const JSON_MQTT_TOPIC_TYPE = 0;
+export const JSON_MQTT_PAYLOAD_TYPE = 1;
+
+export const MQTT_SUBSCRIBE_TOPIC_META_KEY = 'mqtt.subscribe.topic';
 export const MQTT_JSON_RPC_METHOD_META_KEY = 'mqtt.rpc.method';
 
-export const createPipesRpcParamDecorator =
+export const createParamDecorator =
   (
     type: number,
     data?: any,
@@ -22,7 +26,7 @@ export const createPipesRpcParamDecorator =
   ): ParameterDecorator =>
   (target, key, index) => {
     if (!key) {
-      throw new Error(`Failed creating rpc pipes param, received key: ${key}`);
+      throw new Error(`Failed creating param decorator, received key: ${key}`);
     }
 
     const args = Reflect.getMetadata(ROUTE_ARGS_METADATA, target.constructor, key) || {};
@@ -38,6 +42,46 @@ export const createPipesRpcParamDecorator =
       key
     );
   };
+
+export function JsonMqttSubscribe(topic: string) {
+  return applyDecorators(SetMetadata(MQTT_SUBSCRIBE_TOPIC_META_KEY, topic));
+}
+
+export function JsonMqttPayload(): ParameterDecorator;
+export function JsonMqttPayload(
+  ...pipes: (Type<PipeTransform> | PipeTransform)[]
+): ParameterDecorator;
+export function JsonMqttPayload(
+  propertyKey?: string,
+  ...pipes: (Type<PipeTransform> | PipeTransform)[]
+): ParameterDecorator;
+export function JsonMqttPayload(
+  propertyOrPipe?: string | (Type<PipeTransform> | PipeTransform),
+  ...pipes: (Type<PipeTransform> | PipeTransform)[]
+): ParameterDecorator {
+  return createParamDecorator(JSON_MQTT_PAYLOAD_TYPE, propertyOrPipe, ...pipes);
+}
+
+export function JsonMqttTopic(): ParameterDecorator {
+  return createParamDecorator(JSON_MQTT_TOPIC_TYPE);
+}
+
+export const JSON_MQTT_FACTORY: ParamsFactory = {
+  exchangeKeyForValue(type: number, data: ParamData, args: any[]) {
+    if (!args) {
+      return null;
+    }
+
+    let index = 0;
+    if (type === JSON_MQTT_TOPIC_TYPE) {
+      index = 0;
+    } else if (type === JSON_MQTT_PAYLOAD_TYPE) {
+      index = 1;
+    }
+
+    return data && !(typeof data === 'object' && data !== null) ? args[index]?.[data] : args[index];
+  },
+};
 
 export function MqttJsonRpc(method: string) {
   return applyDecorators(SetMetadata(MQTT_JSON_RPC_METHOD_META_KEY, method));
@@ -55,14 +99,14 @@ export function MqttJsonRpcParams(
   propertyOrPipe?: string | (Type<PipeTransform> | PipeTransform),
   ...pipes: (Type<PipeTransform> | PipeTransform)[]
 ): ParameterDecorator {
-  return createPipesRpcParamDecorator(MQTT_JSON_RPC_PARAMS_TYPE, propertyOrPipe, ...pipes);
+  return createParamDecorator(MQTT_JSON_RPC_PARAMS_TYPE, propertyOrPipe, ...pipes);
 }
 
 export function MqttJsonRpcClientId(): ParameterDecorator {
-  return createPipesRpcParamDecorator(MQTT_JSON_RPC_CLIENTID_TYPE);
+  return createParamDecorator(MQTT_JSON_RPC_CLIENT_ID_TYPE);
 }
 
-export const PARAMS_FACTORY: ParamsFactory = {
+export const MQTT_JSON_RPC_PARAMS_FACTORY: ParamsFactory = {
   exchangeKeyForValue(type: number, data: ParamData, args: any[]) {
     if (!args) {
       return null;
@@ -71,7 +115,7 @@ export const PARAMS_FACTORY: ParamsFactory = {
     let index = 0;
     if (type === MQTT_JSON_RPC_PARAMS_TYPE) {
       index = 0;
-    } else if (type === MQTT_JSON_RPC_CLIENTID_TYPE) {
+    } else if (type === MQTT_JSON_RPC_CLIENT_ID_TYPE) {
       index = 1;
     }
 

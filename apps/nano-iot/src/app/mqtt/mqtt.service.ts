@@ -1,8 +1,16 @@
+import { DiscoveryService } from '@golevelup/nestjs-discovery';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ExternalContextCreator } from '@nestjs/core';
 
 import Aedes, { Client } from 'aedes';
 import { IncomingMessage } from 'http';
 import { promisify } from 'util';
+import {
+  JSON_MQTT_FACTORY,
+  MQTT_JSON_RPC_PARAMS_FACTORY,
+  MQTT_SUBSCRIBE_TOPIC_META_KEY,
+} from './rpc.decorator';
+import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 
 interface MqttRequest extends IncomingMessage {
   connDetails: {
@@ -19,9 +27,51 @@ interface MqttRequest extends IncomingMessage {
 export class MqttServerService implements OnModuleInit {
   private logger = new Logger(MqttServerService.name);
 
-  constructor(private aedes: Aedes) {}
+  constructor(
+    private aedes: Aedes,
+    private discover: DiscoveryService,
+    private externalContextCreator: ExternalContextCreator
+  ) {}
 
-  onModuleInit() {
+  async onModuleInit() {
+    const subscribeMethods = await Promise.all([
+      this.discover.controllerMethodsWithMetaAtKey<string>(MQTT_SUBSCRIBE_TOPIC_META_KEY),
+      this.discover.providerMethodsWithMetaAtKey<string>(MQTT_SUBSCRIBE_TOPIC_META_KEY),
+    ]).then((results) => results.flat());
+
+    for (const { meta, discoveredMethod } of subscribeMethods) {
+      const handler = this.externalContextCreator.create(
+        discoveredMethod.parentClass.instance,
+        discoveredMethod.handler,
+        discoveredMethod.methodName,
+        ROUTE_ARGS_METADATA,
+        JSON_MQTT_FACTORY,
+        undefined,
+        undefined,
+        undefined,
+        'mqtt-subscribe'
+      );
+
+      await promisify<void>((cb) =>
+        this.aedes.subscribe(
+          meta,
+          async (packet, callback) => {
+            try {
+              const payload = JSON.parse(packet.payload.toString());
+              await handler(packet.topic, payload);
+            } catch (e) {
+              this.logger.error(`Error handling message on topic ${packet.topic}: ${e}`);
+            }
+            callback();
+          },
+          () => {
+            this.logger.log(`Subscribed to topic ${meta} in ${discoveredMethod.parentClass.name}`);
+            cb(null);
+          }
+        )
+      )();
+    }
+
     this.aedes.preConnect = (client, packet, cb) => {
       if ((client.req as MqttRequest).connDetails.certAuthorized) {
         this.logger.debug(`Client ${this.getClientId(client)} connected`);
@@ -80,6 +130,20 @@ export class MqttServerService implements OnModuleInit {
     )();
   }
 
+  async subscribe(topic: string, handler: (topic: string, payload: unknown) => void) {
+    await promisify<void>((cb) =>
+      this.aedes.subscribe(
+        topic,
+        (packet, cb) => {
+          const payload = JSON.parse(packet.payload.toString());
+          handler(packet.topic, payload);
+          cb();
+        },
+        () => cb(null)
+      )
+    )();
+  }
+
   private getClientId(client: Client): string {
     return (client.req as MqttRequest).connDetails.cert.subject.CN;
   }
@@ -112,5 +176,12 @@ export class MqttService {
 
   async publish(topic: string, message: Record<string, any>) {
     await this.mqttServerService.publish(topic, message);
+  }
+
+  async subscribe(
+    topic: string,
+    handler: (topic: string, payload: unknown) => void | Promise<void>
+  ) {
+    await this.mqttServerService.subscribe(topic, handler);
   }
 }

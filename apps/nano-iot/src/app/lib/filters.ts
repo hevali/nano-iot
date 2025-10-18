@@ -13,6 +13,10 @@ import { ZodSerializationException } from 'nestjs-zod';
 import { EntityNotFoundError, QueryFailedError } from 'typeorm';
 import { ZodError } from 'zod';
 
+function isMqttContext(host: ArgumentsHost) {
+  return host.getType().startsWith('mqtt');
+}
+
 @Catch()
 export class AnyExceptionFilter implements ExceptionFilter {
   private logger = new Logger(AnyExceptionFilter.name);
@@ -20,6 +24,10 @@ export class AnyExceptionFilter implements ExceptionFilter {
   constructor(private readonly host: HttpAdapterHost) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
+    if (isMqttContext(host)) {
+      return;
+    }
+
     const { httpAdapter } = this.host;
 
     const ctx = host.switchToHttp();
@@ -40,6 +48,10 @@ export class AnyExceptionFilter implements ExceptionFilter {
 @Catch(HttpException)
 export class ZodErrorFilter extends BaseExceptionFilter {
   override catch(exception: HttpException, host: ArgumentsHost) {
+    if (isMqttContext(host)) {
+      return;
+    }
+
     if (exception instanceof ZodSerializationException) {
       const zodError = exception.getZodError();
       if (zodError instanceof ZodError) {
@@ -55,6 +67,10 @@ export class ZodErrorFilter extends BaseExceptionFilter {
 @Catch(EntityNotFoundError, QueryFailedError)
 export class TypeormErrorFilter extends AnyExceptionFilter {
   override catch(exception: unknown, host: ArgumentsHost): void {
+    if (isMqttContext(host)) {
+      return;
+    }
+
     if (exception instanceof EntityNotFoundError) {
       super.catch(new NotFoundException(), host);
     } else if (exception instanceof QueryFailedError) {
