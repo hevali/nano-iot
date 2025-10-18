@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { MqttJsonRpc, MqttJsonRpcClientId, MqttJsonRpcParams } from './mqtt.decorator';
+import { MqttJsonRpc, MqttJsonRpcClientId, MqttJsonRpcParams } from './rpc.decorator';
 
 @Controller()
 export class EchoController {

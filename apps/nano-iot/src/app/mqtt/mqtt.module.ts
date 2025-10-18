@@ -1,22 +1,24 @@
-import { Logger, Module, OnApplicationBootstrap } from '@nestjs/common';
+import { Global, Logger, Module, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import Aedes from 'aedes';
 import { createBroker } from 'aedes';
 import { createServer } from 'aedes-server-factory';
-import { MqttService } from './mqtt.service';
+import { MqttServerService, MqttService } from './mqtt.service';
 import { CertificateService } from './certificate.service';
 import { EchoController } from './echo.controller';
 import { RpcDiscoveryService, RpcService } from './rpc.service';
 import { DiscoveryModule } from '@golevelup/nestjs-discovery';
 import { promisified as pem } from 'pem';
 
+const EXPORTS = [RpcService, CertificateService, MqttService];
+
+@Global()
 @Module({
   imports: [DiscoveryModule],
   providers: [
-    MqttService,
-    CertificateService,
-    RpcService,
+    ...EXPORTS,
+    MqttServerService,
     RpcDiscoveryService,
     {
       provide: Aedes,
@@ -32,7 +34,7 @@ import { promisified as pem } from 'pem';
       },
     },
   ],
-  exports: [RpcService, CertificateService],
+  exports: [...EXPORTS],
   controllers: [EchoController],
 })
 export class MqttModule implements OnApplicationBootstrap {

@@ -17,7 +17,6 @@ export class CertificateService {
   async createCertificate(clientId: string) {
     const { key } = await pem.createPrivateKey(2048);
     const { csr } = await pem.createCSR({ clientKey: key, commonName: clientId });
-
     const { certificate } = await pem.createCertificate({
       csr,
       serviceKey: this.rootKey,
@@ -25,7 +24,6 @@ export class CertificateService {
     });
 
     this.logger.log(`Created certificate for client ${clientId}`);
-    this.logger.debug(certificate);
 
     const ok = await pem.verifySigningChain(certificate, [this.rootCert]);
     if (!ok) {

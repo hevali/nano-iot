@@ -16,8 +16,8 @@ interface MqttRequest extends IncomingMessage {
 }
 
 @Injectable()
-export class MqttService implements OnModuleInit {
-  private logger = new Logger(MqttService.name);
+export class MqttServerService implements OnModuleInit {
+  private logger = new Logger(MqttServerService.name);
 
   constructor(private aedes: Aedes) {}
 
@@ -64,7 +64,7 @@ export class MqttService implements OnModuleInit {
     };
   }
 
-  async publish(topic: string, message: any) {
+  async publish(topic: string, message: Record<string, any>) {
     await promisify((cb) =>
       this.aedes.publish(
         {
@@ -103,5 +103,14 @@ export class MqttService implements OnModuleInit {
     }
 
     return length === topicArray.length;
+  }
+}
+
+@Injectable()
+export class MqttService {
+  constructor(private mqttServerService: MqttServerService) {}
+
+  async publish(topic: string, message: Record<string, any>) {
+    await this.mqttServerService.publish(topic, message);
   }
 }
