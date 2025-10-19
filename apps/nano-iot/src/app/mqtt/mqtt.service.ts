@@ -132,7 +132,7 @@ export class MqttServerService implements OnModuleInit {
           cmd: 'publish',
           qos: 0,
           dup: false,
-          retain: true,
+          retain: false,
         },
         (err) => cb(err, null)
       )

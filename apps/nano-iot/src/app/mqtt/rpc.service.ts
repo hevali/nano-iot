@@ -78,7 +78,7 @@ export class RpcDiscoveryService implements OnModuleInit {
               cmd: 'publish',
               qos: 0,
               dup: false,
-              retain: true,
+              retain: false,
             },
             cb
           )
@@ -115,7 +115,7 @@ export class RpcDiscoveryService implements OnModuleInit {
                   cmd: 'publish',
                   qos: 0,
                   dup: false,
-                  retain: true,
+                  retain: false,
                 },
                 cb
               )

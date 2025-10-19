@@ -3,7 +3,12 @@ import { CertificateService } from '../mqtt/certificate.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeviceEntity, DeviceMethodEntity } from './device.entity';
 import { Repository } from 'typeorm';
-import { DeviceDto, DeviceMethodDto, DeviceWithCredentialsDto } from './device.dto';
+import {
+  CreateDeviceDto,
+  DeviceDto,
+  DeviceMethodDto,
+  DeviceWithCredentialsDto,
+} from './device.dto';
 import { MqttService } from '../mqtt/mqtt.service';
 import { RpcService } from '../mqtt/rpc.service';
 import { RpcParams } from 'jsonrpc-lite';
@@ -28,14 +33,14 @@ export class DeviceService {
     return this.toDeviceDto(device);
   }
 
-  async createDevice(id: string) {
-    const existing = await this.deviceRepo.findOneBy({ id });
+  async createDevice(dto: CreateDeviceDto) {
+    const existing = await this.deviceRepo.findOneBy({ id: dto.id });
     if (existing) {
       throw new ConflictException('Device with this ID already exists');
     }
 
-    const device = await this.deviceRepo.save({ id });
-    const { key, certificate } = await this.certificateService.createCertificate(id);
+    const device = await this.deviceRepo.save(dto);
+    const { key, certificate } = await this.certificateService.createCertificate(device.id);
     return this.toDeviceWithCredentialsDto(device, key, certificate);
   }
 

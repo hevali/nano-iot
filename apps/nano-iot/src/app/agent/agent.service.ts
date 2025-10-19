@@ -29,8 +29,9 @@ export class AgentService {
   private tools: ToolSet = {
     DeviceAgent: {
       declaration: {
-        description:
-          'Dedicated agent to handle interaction with a specific device. Deligate device actions to this agent. Whenever you need information about a device or want to do something to a specific device, call this agent.',
+        description: `Dedicated agent to handle interaction with a specific device.
+          Deligate device actions to this agent.
+          Whenever you need information about a device or want to do something to a specific device, call this agent.`,
         parameters: {
           type: Type.OBJECT,
           properties: {
@@ -116,11 +117,13 @@ export class AgentService {
         name: 'Generalist',
       },
       params: {
-        model: 'gemini-2.5-pro',
+        model: 'gemini-2.5-flash',
         contents,
         config: {
-          systemInstruction:
-            'You are a home assistant and support the user on his questions and instructions. You can interact with different agents by delegating tasks to them. You may also call specific APIs or functions directly.',
+          systemInstruction: `You are an assistant and support the user on his questions and instructions.
+            You can interact with different device agents by delegating tasks to them.
+            You may also call specific APIs or functions directly.
+            If you are not sure about what to do, check the available devices and there methods. The might offer what you need.`,
           temperature: 0.2,
           thinkingConfig: {
             includeThoughts: false,
@@ -143,7 +146,7 @@ export class AgentService {
   private async createDeviceAgent(id: string): Promise<Agent> {
     const device = await this.deviceService.getDevice(id);
 
-    const tools: ToolSet = device.methods.reduce(
+    const tools = device.methods.reduce<ToolSet>(
       (prev, m) => ({
         ...prev,
         [m.name]: {
@@ -161,10 +164,10 @@ export class AgentService {
     const agent = new Agent({
       ai: this.ai,
       params: {
-        model: 'gemini-2.5-pro',
+        model: 'gemini-2.5-flash',
         contents: [],
         config: {
-          systemInstruction: `You are a home assistant controlling the following device:\n${JSON.stringify(
+          systemInstruction: `You are an assistant controlling the following device:\n${JSON.stringify(
             device,
             null,
             2
@@ -177,7 +180,7 @@ export class AgentService {
         },
       },
       declaration: {
-        name: 'main',
+        name: 'DeviceAgent',
         description:
           'Dedicated agent to handle interaction with a specific device. Deligate device actions to this agent. Whenever you need information or take action on a specific device, call this agent.',
         parameters: {
@@ -259,7 +262,7 @@ class Agent implements CallableTool {
 
     while (true) {
       const response = await this.options.ai.models.generateContent(params);
-      this.logger.debug('AI response', response.candidates, response.functionCalls);
+      this.logger.debug('AI response', response.functionCalls);
 
       if (response.functionCalls && response.functionCalls.length > 0) {
         const functionCall = response.functionCalls[0];
@@ -276,7 +279,7 @@ class Agent implements CallableTool {
         } catch (error) {
           result = { error: error instanceof Error ? error.message : 'Unknown error', args };
         }
-        this.logger.debug('Function response', name, result);
+        this.logger.debug('Function response', result);
 
         const functionResponse = { name, response: { result } };
 

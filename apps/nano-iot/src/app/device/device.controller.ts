@@ -31,7 +31,7 @@ export class DeviceController {
   @Post()
   @ZodResponse({ type: DeviceWithCredentialsDto, status: 201 })
   async createDevice(@Body() dto: CreateDeviceDto) {
-    return this.deviceService.createDevice(dto.id);
+    return this.deviceService.createDevice(dto);
   }
 
   @Delete(':id')
