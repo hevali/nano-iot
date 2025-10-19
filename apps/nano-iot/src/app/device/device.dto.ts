@@ -1,16 +1,32 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
+import Ajv from 'ajv';
 import { zDate } from '../lib/api';
+
+const ajv = new Ajv();
+
+const isJsonSchema = (data: any) => {
+  try {
+    ajv.compile(data);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
 
 export const DevicePropetiesSchema = z.record(z.string(), z.any());
 
 export const DeviceMethodSchema = z.object({
   name: z.string(),
   description: z.string(),
-  // TODO: JSON-RPC schema
   definition: z.object({
-    params: z.union([z.array(z.any()), z.record(z.any(), z.any())]).optional(),
-    result: z.any(),
+    params: z
+      .union([
+        z.array(z.any().refine(isJsonSchema, { error: 'Invalid JSON Schema' })),
+        z.any().refine(isJsonSchema, { error: 'Invalid JSON Schema' }),
+      ])
+      .optional(),
+    result: z.union([z.any().refine(isJsonSchema, { error: 'Invalid JSON Schema' }), z.null()]),
   }),
 });
 

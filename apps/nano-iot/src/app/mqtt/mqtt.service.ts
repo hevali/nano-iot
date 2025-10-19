@@ -64,6 +64,7 @@ export class MqttServerService implements OnModuleInit {
 
               await handler(packet.topic, payload, packet.payload);
             } catch (e) {
+              // TODO: Send error to device
               this.logger.error(`Error handling message on topic ${packet.topic}: ${e}`);
             }
             callback();
