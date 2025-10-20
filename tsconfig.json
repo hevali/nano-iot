@@ -8,6 +8,12 @@
     },
     {
       "path": "./apps/nano-iot"
+    },
+    {
+      "path": "./libs/common"
+    },
+    {
+      "path": "./apps/devices"
     }
   ]
 }

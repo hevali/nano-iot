@@ -7,7 +7,7 @@ import {
   DeviceMethodSchema,
   DevicePropetiesSchema,
   DeviceWithCredentialsDto,
-} from './device.dto';
+} from '@nano-iot/common';
 import { ZodResponse, ZodValidationPipe } from 'nestjs-zod';
 import { JsonMqttPayload, JsonMqttSubscribe, JsonMqttTopic } from '../mqtt/rpc.decorator';
 

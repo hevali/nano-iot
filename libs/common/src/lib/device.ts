@@ -1,18 +1,35 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import Ajv from 'ajv';
-import { zDate } from '../lib/api';
+import { Ajv } from 'ajv';
 
 const ajv = new Ajv();
 
-const isJsonSchema = (data: any) => {
-  try {
-    ajv.compile(data);
-    return true;
-  } catch (e) {
-    return false;
-  }
-};
+function overrideJSONSchema<T>(p: z.ZodType<T>, customJSONSchema: unknown): z.ZodType<T> {
+  const wrappedInstance = p.meta({});
+  wrappedInstance._zod.toJSONSchema = () => {
+    return customJSONSchema;
+  };
+  return wrappedInstance.meta({});
+}
+
+export const zJsonSchema = z.any().refine(
+  (data: any) => {
+    try {
+      ajv.compile(data);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+  { error: 'Invalid JSON Schema' }
+);
+
+export function zDate(): z.ZodType<Date> {
+  return overrideJSONSchema(
+    z.union([z.date(), z.iso.datetime().pipe(z.coerce.date())]),
+    z.toJSONSchema(z.iso.datetime())
+  );
+}
 
 export const DevicePropetiesSchema = z.record(z.string(), z.any());
 
@@ -20,13 +37,8 @@ export const DeviceMethodSchema = z.object({
   name: z.string(),
   description: z.string(),
   definition: z.object({
-    params: z
-      .union([
-        z.array(z.any().refine(isJsonSchema, { error: 'Invalid JSON Schema' })),
-        z.any().refine(isJsonSchema, { error: 'Invalid JSON Schema' }),
-      ])
-      .optional(),
-    result: z.union([z.any().refine(isJsonSchema, { error: 'Invalid JSON Schema' }), z.null()]),
+    params: z.union([z.array(zJsonSchema), zJsonSchema]).optional(),
+    result: z.union([zJsonSchema, z.null()]),
   }),
 });
 
@@ -50,6 +62,8 @@ const DeviceWithCredentialsDtoSchema = z.object({
 });
 
 export class DeviceWithCredentialsDto extends createZodDto(DeviceWithCredentialsDtoSchema) {}
+
+export interface IDeviceWithCredentialsDto extends DeviceWithCredentialsDto {}
 
 const CreateDeviceDtoSchema = z.object({
   id: z

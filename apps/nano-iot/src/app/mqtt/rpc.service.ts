@@ -139,7 +139,6 @@ export class RpcDiscoveryService implements OnModuleInit {
       'iot/devices/+/rpc/response/+',
       async (packet, cb) => {
         const request = JSONRpc.parse(packet.payload.toString());
-        console.log(request);
         if (Array.isArray(request) || !(request.type === 'success' || request.type === 'error')) {
           return;
         }

@@ -5,11 +5,7 @@ import { ExternalContextCreator } from '@nestjs/core';
 import Aedes, { Client } from 'aedes';
 import { IncomingMessage } from 'http';
 import { promisify } from 'util';
-import {
-  JSON_MQTT_FACTORY,
-  MQTT_JSON_RPC_PARAMS_FACTORY,
-  MQTT_SUBSCRIBE_TOPIC_META_KEY,
-} from './rpc.decorator';
+import { JSON_MQTT_FACTORY, MQTT_SUBSCRIBE_TOPIC_META_KEY } from './rpc.decorator';
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 
 interface MqttRequest extends IncomingMessage {
@@ -78,14 +74,14 @@ export class MqttServerService implements OnModuleInit {
     }
 
     this.aedes.preConnect = (client, packet, cb) => {
+      const clientId = this.getClientId(client);
       if ((client.req as MqttRequest).connDetails.certAuthorized) {
-        this.logger.debug(`Client ${this.getClientId(client)} connected`);
+        this.logger.debug(`Client ${clientId} connected`);
         cb(null, true);
-        return;
+      } else {
+        this.logger.warn(`Client ${clientId} invalid certificate`);
+        cb(new Error('Invalid client certificate'), false);
       }
-
-      this.logger.warn(`Client connection rejected: invalid certificate`);
-      cb(new Error('Invalid client certificate'), false);
     };
 
     this.aedes.authorizePublish = (client, packet, cb) => {
@@ -101,25 +97,32 @@ export class MqttServerService implements OnModuleInit {
 
       const clientId = this.getClientId(client);
 
-      cb(
-        // TODO: Remove chat topic exception
-        this.match(`iot/devices/${clientId}/#`, packet.topic) || packet.topic.startsWith('chat')
-          ? null
-          : new Error('Topic not allowed')
-      );
+      // TODO: Remove chat topic exception
+      if (
+        this.match(`iot/devices/${clientId}/#`, packet.topic) ||
+        packet.topic.startsWith('chat')
+      ) {
+        this.logger.debug(`Client ${clientId} published to topic ${packet.topic}`);
+        cb(null);
+      } else {
+        this.logger.warn(
+          `Client ${clientId} is not authorzied to publish to topic ${packet.topic}`
+        );
+        cb(new Error('Topic not allowed'));
+      }
     };
 
     this.aedes.authorizeSubscribe = (client, sub, cb) => {
       const clientId = this.getClientId(client);
-      this.logger.debug(`Client ${clientId} subscribing to topic ${sub.topic}`);
 
-      cb(
-        // TODO: Remove chat topic exception
-        this.match(`iot/devices/${clientId}/#`, sub.topic) || sub.topic.startsWith('chat')
-          ? null
-          : new Error('Topic not allowed'),
-        sub
-      );
+      // TODO: Remove chat topic exception
+      if (this.match(`iot/devices/${clientId}/#`, sub.topic) || sub.topic.startsWith('chat')) {
+        this.logger.debug(`Client ${clientId} subscribing to topic ${sub.topic}`);
+        cb(null, sub);
+      } else {
+        this.logger.warn(`Client ${clientId} is not authorzied to subscribe to topic ${sub.topic}`);
+        cb(new Error('Topic not allowed'), sub);
+      }
     };
   }
 

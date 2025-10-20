@@ -8,6 +8,7 @@ import {
   Tool,
   FunctionCall,
   Part,
+  ToolListUnion,
 } from '@google/genai';
 import { Injectable, Logger } from '@nestjs/common';
 import { fetchWeatherApi } from 'openmeteo';
@@ -17,16 +18,46 @@ const memory: Record<string, Content[]> = {};
 
 type ToolSet = Record<
   string,
-  {
-    declaration: Omit<FunctionDeclaration, 'name'>;
-    handler: (...args: any[]) => Promise<unknown>;
-  }
+  | {
+      declaration: Omit<FunctionDeclaration, 'name'>;
+      handler: (...args: any[]) => Promise<unknown>;
+    }
+  | Agent
 >;
 
 @Injectable()
 export class AgentService {
   private logger = new Logger(AgentService.name);
   private tools: ToolSet = {
+    WebSearchAgent: new Agent({
+      ai: this.ai,
+      declaration: {
+        name: 'WebSearchAgent',
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            text: {
+              type: Type.STRING,
+              description:
+                'The web query you want to perform. Use this only to look up information that you cannot get from other agents.',
+            },
+          },
+        },
+      },
+      params: {
+        model: 'gemini-2.5-flash',
+        contents: [],
+        config: {
+          systemInstruction: `Use this Agent to look up information that you do not know but might be able to find through web search.`,
+          temperature: 0.2,
+          thinkingConfig: {
+            includeThoughts: false,
+            thinkingBudget: -1,
+          },
+        },
+      },
+      tools: ['googleSearch'],
+    }),
     DeviceAgent: {
       declaration: {
         description: `Dedicated agent to handle interaction with a specific device.
@@ -63,7 +94,7 @@ export class AgentService {
     },
     getCurrentWeather: {
       declaration: {
-        description: `Get the current weather of a specified location`,
+        description: `Pass the coordinates of the location to get the current weather of a specified location.`,
         parameters: {
           type: Type.OBJECT,
           properties: {
@@ -121,9 +152,10 @@ export class AgentService {
         contents,
         config: {
           systemInstruction: `You are an assistant and support the user on his questions and instructions.
-            You can interact with different device agents by delegating tasks to them.
-            You may also call specific APIs or functions directly.
-            If you are not sure about what to do, check the available devices and there methods. The might offer what you need.`,
+You can interact with different device agents by delegating tasks to them.
+You may also call specific APIs or functions directly.
+If you are not sure about what to do, check the available devices and there methods. The might offer what you need.
+If you receive information from another agent, pretend as if the answer comes from you.`,
           temperature: 0.2,
           thinkingConfig: {
             includeThoughts: false,
@@ -212,7 +244,7 @@ interface AgentOptions {
   ai: GoogleGenAI;
   params: GenerateContentParameters;
   declaration: FunctionDeclaration;
-  tools: ToolSet;
+  tools: ToolSet | (keyof Tool)[];
 }
 
 class Agent implements CallableTool {
@@ -243,33 +275,55 @@ class Agent implements CallableTool {
       throw new Error('No instruction given');
     }
 
+    const tools: ToolListUnion = [];
+    if (Array.isArray(this.options.tools)) {
+      tools.push(...this.options.tools.map((t) => ({ [t]: {} })));
+    } else {
+      const functionDeclarations: FunctionDeclaration[] = [];
+      for (const [name, value] of Object.entries(this.options.tools)) {
+        if (value instanceof Agent) {
+          functionDeclarations.push({ ...value.options.declaration, name });
+        } else {
+          functionDeclarations.push({ ...value.declaration, name });
+        }
+      }
+
+      if (functionDeclarations.length) {
+        tools.push({ functionDeclarations });
+      }
+    }
+
     const contents: Content[] = [{ role: 'user', parts: [{ text }] }];
     const params: GenerateContentParameters = {
       ...this.options.params,
       contents,
       config: {
         ...this.options.params.config,
-        tools: [
-          {
-            functionDeclarations: Object.entries(this.options.tools).map(([name, value]) => ({
-              ...value.declaration,
-              name,
-            })),
-          },
-        ],
+        tools,
       },
     };
 
     while (true) {
       const response = await this.options.ai.models.generateContent(params);
-      this.logger.debug('AI response', response.functionCalls);
+      if (response.functionCalls) {
+        this.logger.debug('AI function call response', response.functionCalls);
+      } else if (response.candidates?.length && response.candidates[0].content?.parts?.length) {
+        this.logger.debug(
+          'AI text response',
+          response.candidates[0].content?.parts[0].text || response.functionCalls
+        );
+      }
 
-      if (response.functionCalls && response.functionCalls.length > 0) {
+      if (
+        !Array.isArray(this.options.tools) &&
+        response.functionCalls &&
+        response.functionCalls.length > 0
+      ) {
         const functionCall = response.functionCalls[0];
         const { name, args } = functionCall;
         const tool = this.options.tools[name as string];
 
-        if (!tool) {
+        if (!tool || !('handler' in tool)) {
           throw new Error(`Unknown function call: ${name}`);
         }
 

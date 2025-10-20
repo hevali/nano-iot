@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, OnModuleInit } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { CertificateService } from '../mqtt/certificate.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeviceEntity, DeviceMethodEntity } from './device.entity';
@@ -8,7 +8,7 @@ import {
   DeviceDto,
   DeviceMethodDto,
   DeviceWithCredentialsDto,
-} from './device.dto';
+} from '@nano-iot/common';
 import { MqttService } from '../mqtt/mqtt.service';
 import { RpcService } from '../mqtt/rpc.service';
 import { RpcParams } from 'jsonrpc-lite';
