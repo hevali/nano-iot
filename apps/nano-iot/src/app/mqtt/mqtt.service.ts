@@ -124,6 +124,10 @@ export class MqttServerService implements OnModuleInit {
         cb(new Error('Topic not allowed'), sub);
       }
     };
+
+    this.aedes.on('clientDisconnect', (client) => {
+      this.logger.debug(`Client ${client.id} disconnected`);
+    });
   }
 
   async publish(topic: string, message: string | Record<string, any>) {

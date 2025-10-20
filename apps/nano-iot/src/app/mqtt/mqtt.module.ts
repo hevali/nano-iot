@@ -1,9 +1,15 @@
-import { Global, Logger, Module, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Global,
+  Logger,
+  Module,
+  OnApplicationBootstrap,
+  OnApplicationShutdown,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import Aedes from 'aedes';
 import { createBroker } from 'aedes';
-import { createServer } from 'aedes-server-factory';
+import { createServer, Server } from 'aedes-server-factory';
 import { MqttServerService, MqttService } from './mqtt.service';
 import { CertificateService } from './certificate.service';
 import { EchoController } from './echo.controller';
@@ -37,8 +43,9 @@ const EXPORTS = [RpcService, CertificateService, MqttService];
   exports: [...EXPORTS],
   controllers: [EchoController],
 })
-export class MqttModule implements OnApplicationBootstrap {
+export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown {
   private logger = new Logger(MqttModule.name);
+  private server!: Server;
 
   constructor(private broker: Aedes, private readonly configService: ConfigService) {}
 
@@ -57,18 +64,32 @@ export class MqttModule implements OnApplicationBootstrap {
     const cert = await pem.readCertificateInfo(rootCert);
     this.logger.debug(cert);
 
-    await new Promise<void>((res) => {
-      createServer(this.broker, {
-        tls: {
-          key: rootKey,
-          cert: rootCert,
-          ca: [rootCert],
-          requestCert: true,
-        },
-      }).listen(mqttPort, () => {
+    this.server = createServer(this.broker, {
+      tls: {
+        key: rootKey,
+        cert: rootCert,
+        ca: [rootCert],
+        requestCert: true,
+      },
+    });
+
+    await new Promise<void>((res, rej) => {
+      this.server.on('error', (e) => {
+        if (e.code === 'EADDRINUSE') {
+          this.logger.error('MQTT broker port already in use');
+          rej();
+        }
+      });
+
+      this.server.listen(mqttPort, () => {
         this.logger.log(`MQTT broker started and listening on port ${mqttPort}`);
         res();
       });
     });
+  }
+
+  async onApplicationShutdown() {
+    this.broker.close();
+    this.server.close();
   }
 }

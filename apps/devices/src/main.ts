@@ -17,6 +17,7 @@ async function main() {
       path.join(process.cwd(), `./apps/nano-iot/certs/clients/${device}.crt`)
     ),
     protocolVersion: 4,
+    reconnectPeriod: 5000,
   });
 
   process.on('SIGTERM', () => client.end());
@@ -27,11 +28,10 @@ async function main() {
   client.on('connect', async () => {
     console.log('Connected');
 
+    client.removeAllListeners('message');
     client.on('message', async (topic, message) => {
       const payload = JSON.parse(message.toString());
-      const id = topic.split('/')[5];
-
-      console.log(payload);
+      const id = payload['id'];
 
       if (payload['method'] === 'ping') {
         await client.publishAsync(
@@ -45,7 +45,8 @@ async function main() {
       }
     });
 
-    await client.subscribeAsync(`iot/devices/${device}/rpc/request/+`);
+    await client.unsubscribeAsync(`iot/devices/${device}/rpc/request`);
+    await client.subscribeAsync(`iot/devices/${device}/rpc/request`);
   });
 }
 
