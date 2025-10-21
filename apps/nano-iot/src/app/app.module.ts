@@ -6,13 +6,16 @@ import { DeviceModule } from './device/device.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as path from 'path';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
-import { DeviceEntityMigration1760757514001 } from './migrations/1760757514001-DeviceEntity';
+import {
+  ChatEntityMigration1761017774353,
+  DeviceEntityMigration1760757514001,
+  DeviceMethodEntityMigration1760757514002,
+} from './migrations';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { AnyExceptionFilter, ZodErrorFilter, TypeormErrorFilter } from './lib/filters';
 import { CONFIG_SCHEMA } from './lib/config';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AgentModule } from './agent/agent.module';
-import { DeviceMethodEntityMigration1760757514002 } from './migrations/1760757514002-DeviceMethod';
 
 @Module({
   imports: [
@@ -30,7 +33,11 @@ import { DeviceMethodEntityMigration1760757514002 } from './migrations/176075751
       namingStrategy: new SnakeNamingStrategy(),
       autoLoadEntities: true,
       synchronize: false,
-      migrations: [DeviceEntityMigration1760757514001, DeviceMethodEntityMigration1760757514002],
+      migrations: [
+        DeviceEntityMigration1760757514001,
+        DeviceMethodEntityMigration1760757514002,
+        ChatEntityMigration1761017774353,
+      ],
       migrationsRun: true,
       migrationsTableName: '_migrations',
       migrationsTransactionMode: 'each',

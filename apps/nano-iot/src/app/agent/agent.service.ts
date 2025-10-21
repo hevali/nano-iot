@@ -9,12 +9,15 @@ import {
   FunctionCall,
   Part,
   ToolListUnion,
+  ContentListUnion,
 } from '@google/genai';
 import { Injectable, Logger } from '@nestjs/common';
 import { fetchWeatherApi } from 'openmeteo';
 import { DeviceService } from '../device/device.service';
-
-const memory: Record<string, Content[]> = {};
+import { InjectRepository } from '@nestjs/typeorm';
+import { ChatEntity, ChatMessageEntity } from './chat.entity';
+import { Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
 
 type ToolSet = Record<
   string,
@@ -61,7 +64,7 @@ export class AgentService {
     DeviceAgent: {
       declaration: {
         description: `Dedicated agent to handle interaction with a specific device.
-          Deligate device actions to this agent.
+          Delegate device actions to this agent.
           Whenever you need information about a device or want to do something to a specific device, call this agent.`,
         parameters: {
           type: Type.OBJECT,
@@ -131,16 +134,24 @@ export class AgentService {
     },
   };
 
-  constructor(private ai: GoogleGenAI, private deviceService: DeviceService) {}
+  constructor(
+    private ai: GoogleGenAI,
+    private deviceService: DeviceService,
+    @InjectRepository(ChatEntity) private chatRepo: Repository<ChatEntity>,
+    @InjectRepository(ChatMessageEntity) private chatMessageRepo: Repository<ChatMessageEntity>
+  ) {}
 
-  async callAgent(message: string, id: string): Promise<string> {
-    this.logger.debug(`Chat ${id}: ${message}`);
+  async callAgent(question: string, id?: string): Promise<{ id: string; text: string }> {
+    const chat = await (id
+      ? this.chatRepo.findOneOrFail({ where: { id }, relations: ['messages'] })
+      : this.chatRepo.save({ id: randomUUID(), messages: [] }));
 
-    let contents = memory[id] || [];
-    contents.push({
-      role: 'user',
-      parts: [{ text: message }],
-    });
+    this.logger.debug(`Chat ${chat.id}: ${question}`);
+
+    const contents: Content[] = chat.messages.map<Content>(({ role, text }) => ({
+      role,
+      parts: [{ text }],
+    }));
 
     const generalist = new Agent({
       ai: this.ai,
@@ -166,13 +177,24 @@ If you receive information from another agent, pretend as if the answer comes fr
       tools: this.tools,
     });
 
-    const result = await generalist.call(message);
-    contents.push({ role: 'model', parts: [{ text: result }] });
+    const answer = await generalist.call(question);
 
-    memory[id] = contents;
+    await this.chatMessageRepo.save([
+      {
+        id: randomUUID(),
+        chatId: chat.id,
+        role: 'user',
+        text: question,
+      },
+      {
+        id: randomUUID(),
+        chatId: chat.id,
+        role: 'model',
+        text: answer,
+      },
+    ]);
 
-    const part = contents[contents.length - 1].parts;
-    return part?.length && part[0].text ? part[0].text : 'Empty response';
+    return { id: chat.id, text: answer };
   }
 
   private async createDeviceAgent(id: string): Promise<Agent> {
@@ -258,7 +280,7 @@ class Agent implements CallableTool {
 
   async call(text: string): Promise<string> {
     const responses = await this.callTool([{ args: { text } }]);
-    return responses[responses.length - 1].text || 'No reponse produced';
+    return responses[responses.length - 1].text || 'No response produced';
   }
 
   async tool(): Promise<Tool> {
@@ -293,7 +315,13 @@ class Agent implements CallableTool {
       }
     }
 
-    const contents: Content[] = [{ role: 'user', parts: [{ text }] }];
+    const contents: ContentListUnion = [];
+    if (Array.isArray(this.options.params.contents)) {
+      contents.push(...this.options.params.contents, { role: 'user', parts: [{ text }] });
+    } else {
+      contents.push(this.options.params.contents, { role: 'user', parts: [{ text }] });
+    }
+
     const params: GenerateContentParameters = {
       ...this.options.params,
       contents,
@@ -323,8 +351,14 @@ class Agent implements CallableTool {
         const { name, args } = functionCall;
         const tool = this.options.tools[name as string];
 
-        if (!tool || !('handler' in tool)) {
+        if (!tool) {
           throw new Error(`Unknown function call: ${name}`);
+        }
+
+        if (tool instanceof Agent) {
+          const result = await tool.callTool([functionCall]);
+          contents.push(...result);
+          break;
         }
 
         let result;
@@ -355,6 +389,16 @@ class Agent implements CallableTool {
       }
     }
 
-    return contents[contents.length - 1].parts || [];
+    const last = contents[contents.length - 1];
+
+    if (typeof last === 'string') {
+      return [{ text: last }];
+    } else if ('text' in last) {
+      return [last];
+    } else if ('parts' in last) {
+      return last.parts || [];
+    }
+
+    return [];
   }
 }

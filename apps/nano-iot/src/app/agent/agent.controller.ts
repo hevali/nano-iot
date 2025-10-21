@@ -2,7 +2,6 @@ import { Controller } from '@nestjs/common';
 import { AgentService } from './agent.service';
 import { JsonMqttRawPayload, JsonMqttSubscribe, JsonMqttTopic } from '../mqtt/rpc.decorator';
 import { MqttService } from '../mqtt/mqtt.service';
-import { randomUUID } from 'crypto';
 
 @Controller('agents')
 export class AgentController {
@@ -10,18 +9,21 @@ export class AgentController {
 
   @JsonMqttSubscribe('chat')
   async startChat(@JsonMqttRawPayload() payload: string | Buffer<ArrayBufferLike>) {
-    const id = randomUUID();
-    const result = await this.agentService.callAgent(payload.toString(), id);
-    await this.mqttService.publish(`chat/${id}`, result);
+    const { id, text } = await this.agentService.callAgent(payload.toString());
+    await this.mqttService.publish(`chat/${id}/response`, text);
   }
 
-  @JsonMqttSubscribe('chat/+/response')
+  @JsonMqttSubscribe('chat/+/request')
   async continueChat(
     @JsonMqttRawPayload() payload: string | Buffer<ArrayBufferLike>,
     @JsonMqttTopic() topic: string
   ) {
     const id = topic.split('/')[1];
-    const result = await this.agentService.callAgent(payload.toString(), id);
-    await this.mqttService.publish(`chat/${id}`, result);
+    try {
+      const { text } = await this.agentService.callAgent(payload.toString(), id);
+      await this.mqttService.publish(`chat/${id}/response`, text);
+    } catch (e) {
+      await this.mqttService.publish(`chat/${id}/response`, e as any);
+    }
   }
 }

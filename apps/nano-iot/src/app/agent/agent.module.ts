@@ -4,9 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import { AgentService } from './agent.service';
 import { DeviceModule } from '../device/device.module';
 import { AgentController } from './agent.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ChatEntity, ChatMessageEntity } from './chat.entity';
 
 @Module({
-  imports: [DeviceModule],
+  imports: [TypeOrmModule.forFeature([ChatEntity, ChatMessageEntity]), DeviceModule],
   providers: [
     {
       provide: GoogleGenAI,
