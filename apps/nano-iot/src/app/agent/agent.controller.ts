@@ -23,6 +23,7 @@ export class AgentController {
       const { text } = await this.agentService.callAgent(payload.toString(), id);
       await this.mqttService.publish(`chat/${id}/response`, text);
     } catch (e) {
+      console.log(e);
       await this.mqttService.publish(`chat/${id}/response`, e as any);
     }
   }
