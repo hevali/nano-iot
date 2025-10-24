@@ -74,13 +74,18 @@ export class MqttServerService implements OnModuleInit {
     }
 
     this.aedes.preConnect = (client, packet, cb) => {
-      const clientId = this.getClientId(client);
-      if ((client.req as MqttRequest).connDetails.certAuthorized) {
-        this.logger.debug(`Client ${clientId} connected`);
-        cb(null, true);
-      } else {
-        this.logger.warn(`Client ${clientId} invalid certificate`);
-        cb(new Error('Invalid client certificate'), false);
+      try {
+        const clientId = this.getClientId(client);
+        if ((client.req as MqttRequest).connDetails.certAuthorized) {
+          this.logger.debug(`Client ${clientId} connected`);
+          cb(null, true);
+        } else {
+          this.logger.warn(`Client ${clientId} invalid certificate`);
+          cb(new Error('Invalid client certificate'), false);
+        }
+      } catch (e) {
+        this.logger.error(e);
+        cb(new Error('Unknown error'), false);
       }
     };
 

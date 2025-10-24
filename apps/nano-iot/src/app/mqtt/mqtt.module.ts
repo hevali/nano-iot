@@ -16,6 +16,7 @@ import { EchoController } from './echo.controller';
 import { RpcDiscoveryService, RpcService } from './rpc.service';
 import { DiscoveryModule } from '@golevelup/nestjs-discovery';
 import { promisified as pem } from 'pem';
+import * as forge from 'node-forge';
 
 const EXPORTS = [RpcService, CertificateService, MqttService];
 
@@ -50,24 +51,31 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
   constructor(private broker: Aedes, private readonly configService: ConfigService) {}
 
   async onApplicationBootstrap() {
-    const rootKey = this.configService.get<string>('APP_MQTT_ROOT_KEY', '');
     const rootCert = this.configService.get<string>('APP_MQTT_ROOT_CERT', '');
+    const serverCert = this.configService.get<string>('APP_MQTT_SERVER_CERT', '');
+    const serverKey = this.configService.get<string>('APP_MQTT_SERVER_KEY', '');
     const mqttPort = this.configService.get<number>('APP_MQTT_PORT', 1884);
 
-    const keyPublicKey = await pem.getPublicKey(rootKey);
-    const certPublicKey = await pem.getPublicKey(rootCert);
+    const serverKeyPublicKey = await pem.getPublicKey(serverKey);
+    const serverCertPublicKey = await pem.getPublicKey(serverCert);
 
-    if (certPublicKey.publicKey !== keyPublicKey.publicKey) {
+    if (serverCertPublicKey.publicKey !== serverKeyPublicKey.publicKey) {
       throw new Error('Private key and certificate do not match');
     }
 
-    const cert = await pem.readCertificateInfo(rootCert);
+    const x509 = forge.pki.certificateFromPem(serverCert);
+    const keyUsage = x509.extensions.find((e) => e.name === 'keyUsage');
+    if (keyUsage['keyCertSign'] !== true) {
+      throw new Error('Key usage does not include keyCertSign');
+    }
+
+    const cert = await pem.readCertificateInfo(serverCert);
     this.logger.debug(cert);
 
     this.server = createServer(this.broker, {
       tls: {
-        key: rootKey,
-        cert: rootCert,
+        key: serverKey,
+        cert: serverCert,
         ca: [rootCert],
         requestCert: true,
       },

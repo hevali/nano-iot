@@ -104,6 +104,7 @@
     "jsonrpc-lite": "^2.2.0",
     "langchain": "^1.0.1",
     "nestjs-zod": "^5.0.1",
+    "node-forge": "^1.3.1",
     "pem": "^1.14.8",
     "pigeon-mqtt-nest": "1.0.17",
     "reflect-metadata": "^0.1.13",

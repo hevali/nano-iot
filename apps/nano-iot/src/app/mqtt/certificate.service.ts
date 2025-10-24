@@ -9,8 +9,9 @@ const CERT_DIR = path.join(__dirname, '..', 'certs');
 @Injectable()
 export class CertificateService {
   private logger = new Logger(CertificateService.name);
-  private rootKey = this.configService.get<string>('APP_MQTT_ROOT_KEY', '');
   private rootCert = this.configService.get<string>('APP_MQTT_ROOT_CERT', '');
+  private serverKey = this.configService.get<string>('APP_MQTT_SERVER_KEY', '');
+  private serverCert = this.configService.get<string>('APP_MQTT_SERVER_CERT', '');
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -19,13 +20,13 @@ export class CertificateService {
     const { csr } = await pem.createCSR({ clientKey: key, commonName: clientId });
     const { certificate } = await pem.createCertificate({
       csr,
-      serviceKey: this.rootKey,
-      serviceCertificate: this.rootCert,
+      serviceKey: this.serverKey,
+      serviceCertificate: this.serverCert,
     });
 
     this.logger.log(`Created certificate for client ${clientId}`);
 
-    const ok = await pem.verifySigningChain(certificate, [this.rootCert]);
+    const ok = await pem.verifySigningChain([certificate, this.serverCert] as any, [this.rootCert]);
     if (!ok) {
       throw Error('Could not verify certificate chain');
     }

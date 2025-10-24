@@ -39,8 +39,8 @@ export class DeviceService {
       throw new ConflictException('Device with this ID already exists');
     }
 
+    const { key, certificate } = await this.certificateService.createCertificate(dto.id);
     const device = await this.deviceRepo.save(dto);
-    const { key, certificate } = await this.certificateService.createCertificate(device.id);
     return this.toDeviceWithCredentialsDto(device, key, certificate);
   }
 

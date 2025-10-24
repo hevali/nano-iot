@@ -1,5 +1,5 @@
 {
-  "name": "@nano-iot/cli",
+  "name": "@nano-iot/devices",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -83,15 +83,16 @@
           "build"
         ],
         "options": {
-          "buildTarget": "@nano-iot/cli:build",
-          "runBuildTargetDependencies": false
+          "buildTarget": "@nano-iot/devices:build",
+          "runBuildTargetDependencies": false,
+          "inspect": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@nano-iot/cli:build:development"
+            "buildTarget": "@nano-iot/devices:build:development"
           },
           "production": {
-            "buildTarget": "@nano-iot/cli:build:production"
+            "buildTarget": "@nano-iot/devices:build:production"
           }
         }
       }

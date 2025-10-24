@@ -19,9 +19,9 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug @nano-iot/cli with Nx",
+      "name": "Debug @nano-iot/devices with Nx",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["nx", "serve", "@nano-iot/cli"],
+      "runtimeArgs": ["nx", "serve", "@nano-iot/devices"],
       "env": {
         "NODE_OPTIONS": "--inspect=9230"
       },
@@ -29,7 +29,7 @@
       "internalConsoleOptions": "neverOpen",
       "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/apps/cli/dist/**/*.(m|c|)js", "!**/node_modules/**"]
+      "outFiles": ["${workspaceFolder}/apps/devices/dist/**/*.(m|c|)js", "!**/node_modules/**"]
     }
   ]
 }
