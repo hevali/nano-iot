@@ -5,7 +5,7 @@ import {
   CreateDeviceDto,
   DeviceDto,
   DeviceMethodSchema,
-  DevicePropetiesSchema,
+  DevicePropertiesSchema,
   DeviceWithCredentialsDto,
 } from '@nano-iot/common';
 import { ZodResponse, ZodValidationPipe } from 'nestjs-zod';
@@ -57,7 +57,7 @@ export class DeviceController {
   @JsonMqttSubscribe('iot/devices/+/properties/reported')
   async onDeviceProperties(
     @JsonMqttTopic() topic: string,
-    @JsonMqttPayload(new ZodValidationPipe(DevicePropetiesSchema)) properties: Record<string, any>
+    @JsonMqttPayload(new ZodValidationPipe(DevicePropertiesSchema)) properties: Record<string, any>
   ) {
     const id = topic.split('/')[2];
     await this.deviceService.reportDeviceProperties(id, properties);

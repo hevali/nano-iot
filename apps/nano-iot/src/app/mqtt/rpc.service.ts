@@ -134,7 +134,7 @@ export class RpcDiscoveryService implements OnModuleInit {
     this.logger.debug(`Calling device ${clientId}.${method}()`);
 
     const id = randomUUID();
-    return new Promise<T>(async (res, rej) => {
+    return new Promise<T>((res, rej) => {
       const timer = setTimeout(() => {
         this.handlers.delete(handlerId);
         rej(new Error('Device response timeout'));
@@ -152,19 +152,21 @@ export class RpcDiscoveryService implements OnModuleInit {
         }
       });
 
-      await promisify<void>((cb) =>
-        this.aedes.publish(
-          {
-            topic: `iot/devices/${clientId}/rpc/request`,
-            payload: JSONRpc.request(id, method, params).serialize(),
-            cmd: 'publish',
-            qos: 2,
-            dup: false,
-            retain: false,
-          },
-          cb
-        )
-      )();
+      this.aedes.publish(
+        {
+          topic: `iot/devices/${clientId}/rpc/request`,
+          payload: JSONRpc.request(id, method, params).serialize(),
+          cmd: 'publish',
+          qos: 2,
+          dup: false,
+          retain: false,
+        },
+        (err) => {
+          if (err) {
+            rej(err);
+          }
+        }
+      );
     });
   }
 

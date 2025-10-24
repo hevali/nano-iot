@@ -56,7 +56,9 @@ export class MqttServerService implements OnModuleInit {
               let payload = null;
               try {
                 payload = JSON.parse(packet.payload.toString());
-              } catch {}
+              } catch {
+                // empty
+              }
 
               await handler(packet.topic, payload, packet.payload);
             } catch (e) {
@@ -162,7 +164,9 @@ export class MqttServerService implements OnModuleInit {
           let payload = null;
           try {
             payload = JSON.parse(packet.payload.toString());
-          } catch {}
+          } catch {
+            // empty
+          }
 
           handler(packet.topic, payload, packet.payload);
           cb();
