@@ -10,5 +10,6 @@ FROM docker.io/node:22-alpine
 WORKDIR /app
 COPY --from=builder /app/apps/nano-iot/dist ./apps/nano-iot/dist
 COPY --from=builder /app/libs/common/dist ./libs/common/dist
+COPY --from=builder /app/package.json /app/package-lock.json ./
 RUN npm install --only=production --silent
 CMD ["node", "apps/nano-iot/dist/main.js"]
