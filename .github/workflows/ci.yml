@@ -10,8 +10,12 @@ permissions:
   actions: read
   contents: read
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  main:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,3 +28,34 @@ jobs:
           cache: 'npm'
       - run: npm ci --legacy-peer-deps
       - run: npx nx run-many -t lint test build typecheck
+  build-image:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - run: npx nx docker:build @nano-iot/nano-iot --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+  push-image:
+    runs-on: ubuntu-latest
+    needs: build-image
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push Docker image
+        id: push
+        uses: docker/build-push-action@v6.18.0
+        with:
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
