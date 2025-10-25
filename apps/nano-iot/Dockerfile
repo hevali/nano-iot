@@ -1,20 +1,11 @@
 FROM docker.io/node:22-alpine AS builder
 
-ARG BUILD_FLAG
-
-WORKDIR /app/builder
-
+WORKDIR /app
 COPY . .
-RUN npx nx build nano-iot ${BUILD_FLAG}
+RUN npx nx build nano-iot
 
 FROM docker.io/node:22-alpine
 
-ARG NODE_ENV
-
 WORKDIR /app
-
-COPY --from=builder /app/builder/apps/nano-iot/dist ./
-
-ENV NODE_ENV=$NODE_ENV
-
+COPY --from=builder /app/apps/nano-iot/dist ./
 CMD ["node", "main.js"]
