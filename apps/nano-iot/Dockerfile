@@ -6,7 +6,6 @@ COPY . .
 
 RUN npm install --legacy-peer-deps --silent
 RUN npx nx build nano-iot --prod
-RUN npx nx prune nano-iot
 
 FROM docker.io/node:22-alpine
 
