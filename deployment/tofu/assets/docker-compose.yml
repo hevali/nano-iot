@@ -20,5 +20,5 @@ services:
       - '8883:8883'
     volumes:
       - ~/nano-iot/data:/data
-      - /etc/letsencrypt/live/app.hevali.de/fullchain.pem:/certs/server.crt
+      - /etc/letsencrypt/live/app.hevali.de/cert.pem:/certs/server.crt
       - /etc/letsencrypt/live/app.hevali.de/privkey.pem:/certs/server.key
