@@ -1,10 +1,11 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { promisified as pem } from 'pem';
-import * as forge from 'node-forge';
+import { pki } from 'node-forge';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import type { TypedConfigService } from '../lib/config';
+import { TlsOptions } from 'tls';
 
 const CERT_DIR = path.join(__dirname, '..', 'certs');
 
@@ -29,10 +30,16 @@ export class CertificateService implements OnModuleInit {
   async onModuleInit() {
     this.serverCert =
       this.configService.get<string>('APP_MQTT_SERVER_CERT', '') ||
-      (await fs.readFile(this.configService.getOrThrow<string>('APP_MQTT_SERVER_CERT_PATH'), 'utf-8'));
+      (await fs.readFile(
+        this.configService.getOrThrow<string>('APP_MQTT_SERVER_CERT_PATH'),
+        'utf-8'
+      ));
     this.serverKey =
       this.configService.get<string>('APP_MQTT_SERVER_KEY', '') ||
-      (await fs.readFile(this.configService.getOrThrow<string>('APP_MQTT_SERVER_KEY_PATH'), 'utf-8'));
+      (await fs.readFile(
+        this.configService.getOrThrow<string>('APP_MQTT_SERVER_KEY_PATH'),
+        'utf-8'
+      ));
 
     this.mqttCert =
       this.configService.get<string>('APP_MQTT_TLS_CERT', '') ||
@@ -41,28 +48,18 @@ export class CertificateService implements OnModuleInit {
       this.configService.get<string>('APP_MQTT_TLS_KEY', '') ||
       (await fs.readFile(this.configService.getOrThrow<string>('APP_MQTT_TLS_KEY_PATH'), 'utf-8'));
 
-    const serverKeyPublicKey = await pem.getPublicKey(this.serverKey);
-    const serverCertPublicKey = await pem.getPublicKey(this.serverCert);
-
-    if (serverCertPublicKey.publicKey !== serverKeyPublicKey.publicKey) {
-      throw new Error('Private key and certificate do not match');
-    }
-
-    const x509 = forge.pki.certificateFromPem(this.serverCert);
+    const x509 = pki.certificateFromPem(this.mqttCert);
     const keyUsage = x509.extensions.find((e) => e.name === 'keyUsage');
     if (keyUsage['keyCertSign'] !== true) {
       throw new Error('Key usage does not include keyCertSign');
     }
-
-    const cert = await pem.readCertificateInfo(this.serverCert);
-    this.logger.debug(cert);
   }
 
-  getTlsConfig() {
+  getMqttTlsConfig(): TlsOptions {
     return {
-      caCert: this.mqttCert,
-      serverCert: this.serverCert,
-      serverKey: this.serverKey,
+      ca: this.mqttCert,
+      cert: this.serverCert,
+      key: this.serverKey,
     };
   }
 

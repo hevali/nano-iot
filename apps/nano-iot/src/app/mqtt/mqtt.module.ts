@@ -58,13 +58,11 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
     const mqttPort = this.configService.getOrThrow<number>('APP_MQTT_PORT', 1884);
     const trustProxy = this.configService.getOrThrow<boolean>('APP_TRUST_PROXY');
 
-    const { caCert, serverCert, serverKey } = this.certificateService.getTlsConfig();
+    const tls = this.certificateService.getMqttTlsConfig();
 
     this.server = createServer(this.broker, {
       tls: {
-        key: [serverKey],
-        cert: [serverCert],
-        ca: [caCert],
+        ...tls,
         requestCert: true,
         rejectUnauthorized: true,
         minVersion: 'TLSv1.2',

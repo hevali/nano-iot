@@ -3,7 +3,7 @@ resource "tls_private_key" "root" {
   rsa_bits  = 2048
 }
 
-resource "tls_self_signed_cert" "server" {
+resource "tls_self_signed_cert" "root" {
   validity_period_hours = 24 * 365 * 10
   private_key_pem       = tls_private_key.root.private_key_pem
   allowed_uses = [
@@ -38,8 +38,8 @@ APP_MQTT_PORT="8883"
 
 APP_MQTT_SERVER_KEY_PATH="/certs/server.key"
 APP_MQTT_SERVER_CERT_PATH="/certs/server.crt"
-APP_MQTT_TLS_KEY="${tls_self_signed_cert.server.private_key_pem}"
-APP_MQTT_TLS_CERT="${tls_self_signed_cert.server.cert_pem}"
+APP_MQTT_TLS_KEY="${tls_self_signed_cert.root.private_key_pem}"
+APP_MQTT_TLS_CERT="${tls_self_signed_cert.root.cert_pem}"
 
 APP_GEMINI_API_KEY=${var.gemini_api_key}
 EOT
