@@ -8,3 +8,5 @@
 **/.env
 **/.editorconfig
 **/dist
+**/Dockerfile
+**/.nx
