@@ -2,20 +2,20 @@ version: '3'
 services:
   nginx:
     image: docker.io/nginx:1.29-alpine
+    restart: always
     ports:
       - '80:80'
       - '443:443'
+      - '8883:8883'
     volumes:
-      - ~/nginx:/etc/nginx/conf.d
+      - ~/nginx:/etc/nginx
       - /etc/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - nano-iot
   nano-iot:
     image: ghcr.io/hevali/nano-iot
+    restart: always
     pull_policy: always
-    ports:
-      - '3000:3000'
     env_file: ~/nano-iot/.env
-    environment:
-      PORT: 3000
-      NODE_ENV: production
     volumes:
       - ~/nano-iot/data:/data

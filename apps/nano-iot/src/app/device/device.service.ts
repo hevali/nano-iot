@@ -1,5 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { CertificateService } from '../mqtt/certificate.service';
+import { CertificateService, Credentials } from '../mqtt/certificate.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeviceEntity, DeviceMethodEntity } from './device.entity';
 import { Repository } from 'typeorm';
@@ -39,9 +39,9 @@ export class DeviceService {
       throw new ConflictException('Device with this ID already exists');
     }
 
-    const { key, certificate } = await this.certificateService.createCertificate(dto.id);
+    const credentials = await this.certificateService.createCertificate(dto.id);
     const device = await this.deviceRepo.save(dto);
-    return this.toDeviceWithCredentialsDto(device, key, certificate);
+    return this.toDeviceWithCredentialsDto(device, credentials);
   }
 
   async deleteDevice(id: string) {
@@ -98,15 +98,15 @@ export class DeviceService {
 
   private toDeviceWithCredentialsDto(
     entity: DeviceEntity,
-    key: string,
-    certificate: string
+    credentials: Credentials
   ): DeviceWithCredentialsDto {
     return {
       id: entity.id,
       createdAt: entity.createdAt,
       properties: entity.properties,
-      key,
-      certificate,
+      ca: credentials.ca,
+      certificate: credentials.certificate,
+      key: credentials.key,
     };
   }
 }

@@ -14,7 +14,7 @@ resource "tls_self_signed_cert" "server" {
   ]
   is_ca_certificate = true
   subject {
-    common_name = "nano-iot"
+    common_name = "${hcloud_zone_rrset.app.name}.${data.hcloud_zone.main.name}"
   }
 }
 
@@ -30,7 +30,10 @@ resource "ssh_resource" "dotenv_file" {
 
   file {
     content     = <<EOT
-APP_MQTT_PORT=8883
+PORT="3000"
+NODE_ENV="production"
+APP_TRUST_PROXY="true"
+APP_MQTT_PORT="1883"
 APP_MQTT_SERVER_KEY="${tls_self_signed_cert.server.private_key_pem}"
 APP_MQTT_SERVER_CERT="${tls_self_signed_cert.server.cert_pem}"
 APP_MQTT_ROOT_CERT="${tls_self_signed_cert.server.cert_pem}"
@@ -42,8 +45,10 @@ EOT
   depends_on = [ssh_resource.create_webadmin_user]
 }
 
-resource "ssh_resource" "docker_compose_up" {
-  when = "create"
+resource "ssh_resource" "docker_compose_restart" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
 
   host                               = hcloud_server.server.ipv4_address
   user                               = "webadmin"
@@ -52,8 +57,9 @@ resource "ssh_resource" "docker_compose_up" {
 
   commands = [
     "echo ${var.github_token} | docker login ghcr.io -u USERNAME --password-stdin",
+    "docker compose -f ~/docker-compose.yml down",
     "docker compose -f ~/docker-compose.yml up -d"
   ]
 
-  depends_on = [ssh_resource.docker_compose_file, ssh_resource.nginx_config_file, ssh_resource.dotenv_file]
+  depends_on = [ssh_resource.docker_compose_file, ssh_resource.dotenv_file]
 }

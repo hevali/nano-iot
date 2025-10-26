@@ -6,6 +6,12 @@ import * as path from 'path';
 
 const CERT_DIR = path.join(__dirname, '..', 'certs');
 
+export interface Credentials {
+  ca: string;
+  certificate: string;
+  key: string;
+}
+
 @Injectable()
 export class CertificateService {
   private logger = new Logger(CertificateService.name);
@@ -15,7 +21,7 @@ export class CertificateService {
 
   constructor(private readonly configService: ConfigService) {}
 
-  async createCertificate(clientId: string) {
+  async createCertificate(clientId: string): Promise<Credentials> {
     const { key } = await pem.createPrivateKey(2048);
     const { csr } = await pem.createCSR({ clientKey: key, commonName: clientId });
     const { certificate } = await pem.createCertificate({
@@ -37,6 +43,6 @@ export class CertificateService {
     await fs.outputFile(path.join(clientsPath, `${clientId}.key`), key);
     await fs.outputFile(path.join(clientsPath, `${clientId}.crt`), certificate);
 
-    return { certificate, key };
+    return { ca: this.rootCert, certificate, key };
   }
 }

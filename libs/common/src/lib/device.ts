@@ -57,8 +57,9 @@ const DeviceWithCredentialsDtoSchema = z.object({
   id: z.string(),
   createdAt: zDate(),
   properties: DevicePropertiesSchema,
-  key: z.string(),
+  ca: z.string(),
   certificate: z.string(),
+  key: z.string(),
 });
 
 export class DeviceWithCredentialsDto extends createZodDto(DeviceWithCredentialsDtoSchema) {}

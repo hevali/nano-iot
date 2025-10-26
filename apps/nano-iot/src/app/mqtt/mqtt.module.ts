@@ -51,10 +51,11 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
   constructor(private broker: Aedes, private readonly configService: ConfigService) {}
 
   async onApplicationBootstrap() {
-    const rootCert = this.configService.get<string>('APP_MQTT_ROOT_CERT', '');
-    const serverCert = this.configService.get<string>('APP_MQTT_SERVER_CERT', '');
-    const serverKey = this.configService.get<string>('APP_MQTT_SERVER_KEY', '');
-    const mqttPort = this.configService.get<number>('APP_MQTT_PORT', 1884);
+    const rootCert = this.configService.getOrThrow<string>('APP_MQTT_ROOT_CERT', '');
+    const serverCert = this.configService.getOrThrow<string>('APP_MQTT_SERVER_CERT', '');
+    const serverKey = this.configService.getOrThrow<string>('APP_MQTT_SERVER_KEY', '');
+    const mqttPort = this.configService.getOrThrow<number>('APP_MQTT_PORT', 1884);
+    const trustProxy = this.configService.getOrThrow<boolean>('APP_TRUST_PROXY');
 
     const serverKeyPublicKey = await pem.getPublicKey(serverKey);
     const serverCertPublicKey = await pem.getPublicKey(serverCert);
@@ -74,11 +75,13 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
 
     this.server = createServer(this.broker, {
       tls: {
-        key: serverKey,
-        cert: serverCert,
+        key: [serverKey],
+        cert: [serverCert],
         ca: [rootCert],
         requestCert: true,
+        enableTrace: true,
       },
+      trustProxy,
     });
 
     await new Promise<void>((res, rej) => {
