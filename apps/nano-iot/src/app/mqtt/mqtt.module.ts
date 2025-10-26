@@ -1,5 +1,6 @@
 import {
   Global,
+  Inject,
   Logger,
   Module,
   OnApplicationBootstrap,
@@ -15,8 +16,7 @@ import { CertificateService } from './certificate.service';
 import { EchoController } from './echo.controller';
 import { RpcDiscoveryService, RpcService } from './rpc.service';
 import { DiscoveryModule } from '@golevelup/nestjs-discovery';
-import { promisified as pem } from 'pem';
-import * as forge from 'node-forge';
+import type { TypedConfigService } from '../lib/config';
 
 const EXPORTS = [RpcService, CertificateService, MqttService];
 
@@ -48,38 +48,26 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
   private logger = new Logger(MqttModule.name);
   private server!: Server;
 
-  constructor(private broker: Aedes, private readonly configService: ConfigService) {}
+  constructor(
+    private broker: Aedes,
+    private certificateService: CertificateService,
+    @Inject(ConfigService) private configService: TypedConfigService
+  ) {}
 
   async onApplicationBootstrap() {
-    const rootCert = this.configService.getOrThrow<string>('APP_MQTT_ROOT_CERT', '');
-    const serverCert = this.configService.getOrThrow<string>('APP_MQTT_SERVER_CERT', '');
-    const serverKey = this.configService.getOrThrow<string>('APP_MQTT_SERVER_KEY', '');
     const mqttPort = this.configService.getOrThrow<number>('APP_MQTT_PORT', 1884);
     const trustProxy = this.configService.getOrThrow<boolean>('APP_TRUST_PROXY');
 
-    const serverKeyPublicKey = await pem.getPublicKey(serverKey);
-    const serverCertPublicKey = await pem.getPublicKey(serverCert);
-
-    if (serverCertPublicKey.publicKey !== serverKeyPublicKey.publicKey) {
-      throw new Error('Private key and certificate do not match');
-    }
-
-    const x509 = forge.pki.certificateFromPem(serverCert);
-    const keyUsage = x509.extensions.find((e) => e.name === 'keyUsage');
-    if (keyUsage['keyCertSign'] !== true) {
-      throw new Error('Key usage does not include keyCertSign');
-    }
-
-    const cert = await pem.readCertificateInfo(serverCert);
-    this.logger.debug(cert);
+    const { caCert, serverCert, serverKey } = this.certificateService.getTlsConfig();
 
     this.server = createServer(this.broker, {
       tls: {
         key: [serverKey],
         cert: [serverCert],
-        ca: [rootCert],
+        ca: [caCert],
         requestCert: true,
-        enableTrace: true,
+        rejectUnauthorized: true,
+        minVersion: 'TLSv1.2',
       },
       trustProxy,
     });

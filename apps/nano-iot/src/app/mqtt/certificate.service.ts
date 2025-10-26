@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { promisified as pem } from 'pem';
+import * as forge from 'node-forge';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import type { TypedConfigService } from '../lib/config';
 
 const CERT_DIR = path.join(__dirname, '..', 'certs');
 
@@ -13,26 +15,69 @@ export interface Credentials {
 }
 
 @Injectable()
-export class CertificateService {
+export class CertificateService implements OnModuleInit {
   private logger = new Logger(CertificateService.name);
-  private rootCert = this.configService.get<string>('APP_MQTT_ROOT_CERT', '');
-  private serverKey = this.configService.get<string>('APP_MQTT_SERVER_KEY', '');
-  private serverCert = this.configService.get<string>('APP_MQTT_SERVER_CERT', '');
 
-  constructor(private readonly configService: ConfigService) {}
+  private serverCert!: string;
+  private serverKey!: string;
+
+  private mqttCert!: string;
+  private mqttKey!: string;
+
+  constructor(@Inject(ConfigService) private configService: TypedConfigService) {}
+
+  async onModuleInit() {
+    this.serverCert =
+      this.configService.get<string>('APP_MQTT_SERVER_CERT', '') ||
+      (await fs.readFile(this.configService.get<string>('APP_MQTT_SERVER_CERT_PATH', ''), 'utf-8'));
+    this.serverKey =
+      this.configService.get<string>('APP_MQTT_SERVER_KEY', '') ||
+      (await fs.readFile(this.configService.get<string>('APP_MQTT_SERVER_KEY_PATH', ''), 'utf-8'));
+
+    this.mqttCert =
+      this.configService.get<string>('APP_MQTT_TLS_CERT', '') ||
+      (await fs.readFile(this.configService.get<string>('APP_MQTT_TLS_CERT_PATH', ''), 'utf-8'));
+    this.mqttKey =
+      this.configService.get<string>('APP_MQTT_TLS_KEY', '') ||
+      (await fs.readFile(this.configService.get<string>('APP_MQTT_TLS_KEY_PATH', ''), 'utf-8'));
+
+    const serverKeyPublicKey = await pem.getPublicKey(this.serverKey);
+    const serverCertPublicKey = await pem.getPublicKey(this.serverCert);
+
+    if (serverCertPublicKey.publicKey !== serverKeyPublicKey.publicKey) {
+      throw new Error('Private key and certificate do not match');
+    }
+
+    const x509 = forge.pki.certificateFromPem(this.serverCert);
+    const keyUsage = x509.extensions.find((e) => e.name === 'keyUsage');
+    if (keyUsage['keyCertSign'] !== true) {
+      throw new Error('Key usage does not include keyCertSign');
+    }
+
+    const cert = await pem.readCertificateInfo(this.serverCert);
+    this.logger.debug(cert);
+  }
+
+  getTlsConfig() {
+    return {
+      caCert: this.mqttCert,
+      serverCert: this.serverCert,
+      serverKey: this.serverKey,
+    };
+  }
 
   async createCertificate(clientId: string): Promise<Credentials> {
     const { key } = await pem.createPrivateKey(2048);
     const { csr } = await pem.createCSR({ clientKey: key, commonName: clientId });
     const { certificate } = await pem.createCertificate({
       csr,
-      serviceKey: this.serverKey,
-      serviceCertificate: this.serverCert,
+      serviceKey: this.mqttKey,
+      serviceCertificate: this.mqttCert,
     });
 
     this.logger.log(`Created certificate for client ${clientId}`);
 
-    const ok = await pem.verifySigningChain([certificate, this.serverCert] as any, [this.rootCert]);
+    const ok = await pem.verifySigningChain(certificate, [this.mqttCert]);
     if (!ok) {
       throw Error('Could not verify certificate chain');
     }
@@ -43,6 +88,6 @@ export class CertificateService {
     await fs.outputFile(path.join(clientsPath, `${clientId}.key`), key);
     await fs.outputFile(path.join(clientsPath, `${clientId}.crt`), certificate);
 
-    return { ca: this.rootCert, certificate, key };
+    return { ca: this.mqttCert, certificate, key };
   }
 }

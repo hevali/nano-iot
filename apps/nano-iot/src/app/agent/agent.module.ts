@@ -6,13 +6,14 @@ import { AgentController } from './agent.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChatEntity, ChatMessageEntity } from './chat.entity';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { TypedConfigService } from '../lib/config';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ChatEntity, ChatMessageEntity]), DeviceModule],
   providers: [
     {
       provide: ChatGoogleGenerativeAI,
-      useFactory: (config: ConfigService) => {
+      useFactory: (config: TypedConfigService) => {
         return new ChatGoogleGenerativeAI({
           model: 'gemini-2.5-flash',
           apiKey: config.get('APP_GEMINI_API_KEY', ''),

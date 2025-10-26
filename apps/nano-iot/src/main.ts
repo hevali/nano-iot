@@ -11,14 +11,14 @@ import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { Request, Response, NextFunction } from 'express';
-import { IConfigService } from './app/lib/config';
+import { TypedConfigService } from './app/lib/config';
 
 const DOCS_PATH = 'docs';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  const configService = app.get<IConfigService>(ConfigService);
+  const configService = app.get<TypedConfigService>(ConfigService);
 
   const trustProxy = configService.getOrThrow<boolean>('APP_TRUST_PROXY');
   app.set('trust proxy', trustProxy ? 1 : 0);

@@ -32,11 +32,15 @@ resource "ssh_resource" "dotenv_file" {
     content     = <<EOT
 PORT="3000"
 NODE_ENV="production"
+
 APP_TRUST_PROXY="true"
-APP_MQTT_PORT="1883"
-APP_MQTT_SERVER_KEY="${tls_self_signed_cert.server.private_key_pem}"
-APP_MQTT_SERVER_CERT="${tls_self_signed_cert.server.cert_pem}"
-APP_MQTT_ROOT_CERT="${tls_self_signed_cert.server.cert_pem}"
+APP_MQTT_PORT="8883"
+
+APP_MQTT_SERVER_KEY_PATH="/certs/server.key"
+APP_MQTT_SERVER_CERT_PATH="/certs/server.crt"
+APP_MQTT_TLS_KEY="${tls_self_signed_cert.server.private_key_pem}"
+APP_MQTT_TLS_CERT="${tls_self_signed_cert.server.cert_pem}"
+
 APP_GEMINI_API_KEY=${var.gemini_api_key}
 EOT
     destination = "~/nano-iot/.env"
