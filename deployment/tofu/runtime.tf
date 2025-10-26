@@ -16,7 +16,8 @@ resource "ssh_resource" "create_webadmin_user" {
     "adduser webadmin --disabled-password",
     "echo webadmin:${random_password.webadmin_password.result} | chpasswd",
     "usermod -aG sudo webadmin",
-    "rsync --archive --chown=webadmin:webadmin ~/.ssh /home/webadmin"
+    "rsync --archive --chown=webadmin:webadmin ~/.ssh /home/webadmin",
+    "echo \"webadmin ALL=(ALL:ALL) NOPASSWD: ALL\" | sudo tee /etc/sudoers.d/webadmin"
   ]
 }
 
@@ -32,6 +33,8 @@ resource "ssh_resource" "update" {
     "sudo apt-get update",
     "sudo apt-get upgrade -y"
   ]
+
+  depends_on = [ssh_resource.create_webadmin_user]
 }
 
 resource "ssh_resource" "install_docker" {
@@ -52,7 +55,9 @@ resource "ssh_resource" "install_docker" {
     "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"$${UBUNTU_CODENAME:-$VERSION_CODENAME}\") stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
     "sudo apt-get update",
     #
-    "sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y"
+    "sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y",
+    #
+    "sudo usermod -aG docker $USER"
   ]
 
   depends_on = [ssh_resource.update]
@@ -106,10 +111,10 @@ resource "ssh_resource" "acquire_certificate" {
 
   commands = [
     # "certbot certonly --authenticator dns-hetzner --dns-hetzner-credentials ~/credentials.ini --agree-tos -d ${hcloud_zone_rrset.app.name}.${data.hcloud_zone.main.name} -d ${hcloud_zone_rrset.www_app.name}.${data.hcloud_zone.main.name} -n"
-    "certbot certonly --standalone --agree-tos -d ${hcloud_zone_rrset.app.name}.${data.hcloud_zone.main.name} -d ${hcloud_zone_rrset.www_app.name}.${data.hcloud_zone.main.name} -n",
+    "sudo certbot certonly --standalone --agree-tos -d ${hcloud_zone_rrset.app.name}.${data.hcloud_zone.main.name} -d ${hcloud_zone_rrset.www_app.name}.${data.hcloud_zone.main.name} -n",
     "mkdir -p ~/nginx",
-    "curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > \"/etc/letsencrypt/options-ssl-nginx.conf\"",
-    "curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > \"/etc/letsencrypt/ssl-dhparams.pem\""
+    "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /etc/letsencrypt/options-ssl-nginx.conf\"",
+    "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/letsencrypt/ssl-dhparams.pem\""
   ]
 
   depends_on = [ssh_resource.install_certbot]
@@ -139,24 +144,12 @@ resource "ssh_resource" "nginx_config_file" {
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
+  pre_commands = ["mkdir -p ~/nginx"]
+
   file {
     content     = file("${path.module}/assets/nginx.conf")
     destination = "~/nginx/nginx.conf"
   }
 
   depends_on = [ssh_resource.acquire_certificate]
-}
-
-
-resource "ssh_resource" "docker_compose_up" {
-  when = "create"
-
-  host                               = hcloud_server.server.ipv4_address
-  user                               = "webadmin"
-  private_key                        = file(var.ssh_key_path)
-  ignore_no_supported_methods_remain = true
-
-  commands = ["docker compose -f ~/docker-compose.yml up -d"]
-
-  depends_on = [ssh_resource.docker_compose_file, ssh_resource.nginx_config_file]
 }

@@ -9,3 +9,11 @@ variable "dns_zone" {
 variable "ssh_key_path" {
   type = string
 }
+
+variable "github_token" {
+  type = string
+}
+
+variable "gemini_api_key" {
+  type = string
+}

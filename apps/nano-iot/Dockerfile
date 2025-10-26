@@ -9,6 +9,8 @@ RUN npx nx build nano-iot --prod
 
 FROM docker.io/node:22-alpine
 
+RUN apk add openssl
+
 WORKDIR /app
 
 COPY --from=builder /app/apps/nano-iot/dist ./apps/nano-iot/dist
