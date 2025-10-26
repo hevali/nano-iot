@@ -20,5 +20,5 @@ services:
       - '8883:8883'
     volumes:
       - ~/nano-iot/data:/data
-      - /etc/letsencrypt/live/${hostname}/cert.pem:/certs/server.crt
+      - /etc/letsencrypt/live/${hostname}/fullchain.pem:/certs/server.crt
       - /etc/letsencrypt/live/${hostname}/privkey.pem:/certs/server.key
