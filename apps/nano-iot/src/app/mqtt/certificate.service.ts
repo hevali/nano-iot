@@ -29,17 +29,17 @@ export class CertificateService implements OnModuleInit {
   async onModuleInit() {
     this.serverCert =
       this.configService.get<string>('APP_MQTT_SERVER_CERT', '') ||
-      (await fs.readFile(this.configService.get<string>('APP_MQTT_SERVER_CERT_PATH', ''), 'utf-8'));
+      (await fs.readFile(this.configService.getOrThrow<string>('APP_MQTT_SERVER_CERT_PATH'), 'utf-8'));
     this.serverKey =
       this.configService.get<string>('APP_MQTT_SERVER_KEY', '') ||
-      (await fs.readFile(this.configService.get<string>('APP_MQTT_SERVER_KEY_PATH', ''), 'utf-8'));
+      (await fs.readFile(this.configService.getOrThrow<string>('APP_MQTT_SERVER_KEY_PATH'), 'utf-8'));
 
     this.mqttCert =
       this.configService.get<string>('APP_MQTT_TLS_CERT', '') ||
-      (await fs.readFile(this.configService.get<string>('APP_MQTT_TLS_CERT_PATH', ''), 'utf-8'));
+      (await fs.readFile(this.configService.getOrThrow<string>('APP_MQTT_TLS_CERT_PATH'), 'utf-8'));
     this.mqttKey =
       this.configService.get<string>('APP_MQTT_TLS_KEY', '') ||
-      (await fs.readFile(this.configService.get<string>('APP_MQTT_TLS_KEY_PATH', ''), 'utf-8'));
+      (await fs.readFile(this.configService.getOrThrow<string>('APP_MQTT_TLS_KEY_PATH'), 'utf-8'));
 
     const serverKeyPublicKey = await pem.getPublicKey(this.serverKey);
     const serverCertPublicKey = await pem.getPublicKey(this.serverCert);
