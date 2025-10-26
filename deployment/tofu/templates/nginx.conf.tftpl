@@ -8,17 +8,17 @@ http {
 
   server {
       listen 80;
-      server_name app.hevali.de;
+      server_name ${hostname};
       location / {
           return 301 https://$host$request_uri;
       }
   }
   server {
       listen 443 ssl;
-      server_name app.hevali.de;
+      server_name ${hostname};
 
-      ssl_certificate /etc/letsencrypt/live/app.hevali.de/fullchain.pem;
-      ssl_certificate_key /etc/letsencrypt/live/app.hevali.de/privkey.pem;
+      ssl_certificate /etc/letsencrypt/live/${hostname}/fullchain.pem;
+      ssl_certificate_key /etc/letsencrypt/live/${hostname}/privkey.pem;
 
       include /etc/letsencrypt/options-ssl-nginx.conf;
       ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
@@ -37,7 +37,7 @@ http {
 #   resolver 127.0.0.11;
 
 #   server {
-#       server_name app.hevali.de;
+#       server_name ${hostname};
 #       listen 8883;
 #       proxy_pass nano-iot:1883;
 #   }

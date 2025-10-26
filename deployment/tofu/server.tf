@@ -1,3 +1,7 @@
+locals {
+  hostname = "${hcloud_zone_rrset.app.name}.${data.hcloud_zone.main.name}"
+}
+
 resource "hcloud_ssh_key" "key" {
   name       = "nano-iot-key"
   public_key = data.tls_public_key.key.public_key_openssh

@@ -110,46 +110,12 @@ resource "ssh_resource" "acquire_certificate" {
   ignore_no_supported_methods_remain = true
 
   commands = [
-    # "certbot certonly --authenticator dns-hetzner --dns-hetzner-credentials ~/credentials.ini --agree-tos -d ${hcloud_zone_rrset.app.name}.${data.hcloud_zone.main.name} -d ${hcloud_zone_rrset.www_app.name}.${data.hcloud_zone.main.name} -n"
-    "sudo certbot certonly --standalone --agree-tos -d ${hcloud_zone_rrset.app.name}.${data.hcloud_zone.main.name} -d ${hcloud_zone_rrset.www_app.name}.${data.hcloud_zone.main.name} -n",
+    # "certbot certonly --authenticator dns-hetzner --dns-hetzner-credentials ~/credentials.ini --agree-tos -d ${local.hostname} -d ${hcloud_zone_rrset.www_app.name}.${data.hcloud_zone.main.name} -n"
+    "sudo certbot certonly --standalone --agree-tos -d ${local.hostname} -d ${hcloud_zone_rrset.www_app.name}.${data.hcloud_zone.main.name} -n",
     "mkdir -p ~/nginx",
     "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /etc/letsencrypt/options-ssl-nginx.conf\"",
     "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/letsencrypt/ssl-dhparams.pem\""
   ]
 
   depends_on = [ssh_resource.install_certbot]
-}
-
-resource "ssh_resource" "docker_compose_file" {
-  when = "create"
-
-  host                               = hcloud_server.server.ipv4_address
-  user                               = "webadmin"
-  private_key                        = file(var.ssh_key_path)
-  ignore_no_supported_methods_remain = true
-
-  file {
-    content     = file("${path.module}/assets/docker-compose.yml")
-    destination = "~/docker-compose.yml"
-  }
-
-  depends_on = [ssh_resource.acquire_certificate]
-}
-
-resource "ssh_resource" "nginx_config_file" {
-  when = "create"
-
-  host                               = hcloud_server.server.ipv4_address
-  user                               = "webadmin"
-  private_key                        = file(var.ssh_key_path)
-  ignore_no_supported_methods_remain = true
-
-  pre_commands = ["mkdir -p ~/nginx"]
-
-  file {
-    content     = file("${path.module}/assets/nginx.conf")
-    destination = "~/nginx/nginx.conf"
-  }
-
-  depends_on = [ssh_resource.acquire_certificate]
 }

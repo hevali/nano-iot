@@ -14,8 +14,42 @@ resource "tls_self_signed_cert" "root" {
   ]
   is_ca_certificate = true
   subject {
-    common_name = "${hcloud_zone_rrset.app.name}.${data.hcloud_zone.main.name}"
+    common_name = local.hostname
   }
+}
+
+resource "ssh_resource" "docker_compose_file" {
+  when = "create"
+
+  host                               = hcloud_server.server.ipv4_address
+  user                               = "webadmin"
+  private_key                        = file(var.ssh_key_path)
+  ignore_no_supported_methods_remain = true
+
+  file {
+    content     = templatefile("${path.module}/templates/docker-compose.yml.tftpl", { hostname : local.hostname })
+    destination = "~/docker-compose.yml"
+  }
+
+  depends_on = [ssh_resource.acquire_certificate]
+}
+
+resource "ssh_resource" "nginx_config_file" {
+  when = "create"
+
+  host                               = hcloud_server.server.ipv4_address
+  user                               = "webadmin"
+  private_key                        = file(var.ssh_key_path)
+  ignore_no_supported_methods_remain = true
+
+  pre_commands = ["mkdir -p ~/nginx"]
+
+  file {
+    content     = templatefile("${path.module}/templates/nginx.conf.tftpl", { hostname : local.hostname })
+    destination = "~/nginx/nginx.conf"
+  }
+
+  depends_on = [ssh_resource.acquire_certificate]
 }
 
 resource "ssh_resource" "dotenv_file" {
