@@ -100,7 +100,7 @@ resource "ssh_resource" "docker_compose_down" {
     "docker compose -f ~/docker-compose.yml down"
   ]
 
-  depends_on = [ssh_resource.docker_compose_file]
+  depends_on = [ssh_resource.docker_compose_file, ssh_resource.dotenv_file]
 }
 
 resource "ssh_resource" "docker_compose_up" {
