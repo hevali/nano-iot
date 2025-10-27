@@ -7,8 +7,6 @@ import * as path from 'path';
 import type { TypedConfigService } from '../lib/config';
 import { TlsOptions } from 'tls';
 
-const CERT_DIR = path.join(__dirname, '..', 'certs');
-
 export interface Credentials {
   ca: string;
   certificate: string;
@@ -89,9 +87,8 @@ keyUsage = nonRepudiation, digitalSignature, keyEncipherment`,
 
     this.logger.log(`Verified certificate chain`);
 
-    const clientsPath = path.join(CERT_DIR, 'clients');
-    await fs.outputFile(path.join(clientsPath, `${clientId}.key`), key);
-    await fs.outputFile(path.join(clientsPath, `${clientId}.crt`), certificate);
+    const certsPath = path.join(this.configService.getOrThrow<string>('APP_MQTT_CERTS_DIR'));
+    await fs.outputFile(path.join(certsPath, `${clientId}.crt`), certificate);
 
     return { ca: this.mqttCert, certificate, key };
   }

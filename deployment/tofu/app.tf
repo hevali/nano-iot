@@ -69,12 +69,14 @@ PORT="3000"
 NODE_ENV="production"
 
 APP_TRUST_PROXY="true"
-APP_MQTT_PORT="1883"
+APP_DATA_PATH=/data
 
+APP_MQTT_PORT="1883"
 APP_MQTT_SERVER_KEY_PATH="/certs/server.key"
 APP_MQTT_SERVER_CERT_PATH="/certs/server.crt"
 APP_MQTT_TLS_KEY="${tls_self_signed_cert.root.private_key_pem}"
 APP_MQTT_TLS_CERT="${tls_self_signed_cert.root.cert_pem}"
+APP_MQTT_CERTS_DIR=/clients
 
 APP_GEMINI_API_KEY=${var.gemini_api_key}
 EOT

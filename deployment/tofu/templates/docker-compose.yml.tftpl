@@ -9,7 +9,7 @@ services:
       - '8883:8883'
     volumes:
       - ~/nginx:/etc/nginx
-      - /etc/letsencrypt:/etc/letsencrypt
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - nano-iot
   nano-iot:
@@ -19,5 +19,6 @@ services:
     env_file: ~/nano-iot/.env
     volumes:
       - ~/nano-iot/data:/data
-      - /etc/letsencrypt/live/${hostname}/fullchain.pem:/certs/server.crt
-      - /etc/letsencrypt/live/${hostname}/privkey.pem:/certs/server.key
+      - ~/nano-iot/clients:/clients
+      - /etc/letsencrypt/live/${hostname}/fullchain.pem:/certs/server.crt:ro
+      - /etc/letsencrypt/live/${hostname}/privkey.pem:/certs/server.key:ro

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { MqttModule } from './mqtt/mqtt.module';
 import { DeviceModule } from './device/device.module';
@@ -13,7 +13,7 @@ import {
 } from './migrations';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { AnyExceptionFilter, ZodErrorFilter, TypeormErrorFilter } from './lib/filters';
-import { CONFIG_SCHEMA } from './lib/config';
+import { CONFIG_SCHEMA, TypedConfigService } from './lib/config';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AgentModule } from './agent/agent.module';
 
@@ -26,21 +26,26 @@ import { AgentModule } from './agent/agent.module';
         return validated;
       },
     }),
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: path.join(__dirname, '..', 'dev.db'),
-      busyErrorRetry: 3,
-      namingStrategy: new SnakeNamingStrategy(),
-      autoLoadEntities: true,
-      synchronize: false,
-      migrations: [
-        DeviceEntityMigration1760757514001,
-        DeviceMethodEntityMigration1760757514002,
-        ChatEntityMigration1761017774353,
-      ],
-      migrationsRun: true,
-      migrationsTableName: '_migrations',
-      migrationsTransactionMode: 'each',
+    TypeOrmModule.forRootAsync({
+      useFactory: (config: TypedConfigService) => {
+        return {
+          type: 'sqlite',
+          database: path.join(config.getOrThrow<string>('APP_DATA_PATH'), 'nano-iot.db'),
+          busyErrorRetry: 3,
+          namingStrategy: new SnakeNamingStrategy(),
+          autoLoadEntities: true,
+          synchronize: false,
+          migrations: [
+            DeviceEntityMigration1760757514001,
+            DeviceMethodEntityMigration1760757514002,
+            ChatEntityMigration1761017774353,
+          ],
+          migrationsRun: true,
+          migrationsTableName: '_migrations',
+          migrationsTransactionMode: 'each',
+        };
+      },
+      inject: [ConfigService],
     }),
     MqttModule,
     DeviceModule,

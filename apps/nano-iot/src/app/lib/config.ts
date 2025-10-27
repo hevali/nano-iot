@@ -1,6 +1,7 @@
 import { LOG_LEVELS } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
+import * as path from 'path';
 
 export const CONFIG_SCHEMA = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -19,8 +20,11 @@ export const CONFIG_SCHEMA = z.object({
   APP_MQTT_TLS_CERT_PATH: z.string().optional(),
   APP_MQTT_TLS_KEY: z.string().optional(),
   APP_MQTT_TLS_KEY_PATH: z.string().optional(),
+  APP_MQTT_CERTS_DIR: z.string().default(path.join(__dirname, '..', 'certs')),
 
   APP_GEMINI_API_KEY: z.string(),
+
+  APP_DATA_PATH: z.string().default(path.join(__dirname, '..')),
 });
 
 export type TypedConfigService = ConfigService<z.infer<typeof CONFIG_SCHEMA>>;

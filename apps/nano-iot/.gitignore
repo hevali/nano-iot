@@ -3,4 +3,4 @@ certs
 .env
 .env*.local
 
-dev.db
+nano-iot.db
