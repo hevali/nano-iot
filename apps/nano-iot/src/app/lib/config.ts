@@ -1,9 +1,11 @@
+import { LOG_LEVELS } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
 
 export const CONFIG_SCHEMA = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
 
   APP_TRUST_PROXY: z.coerce.boolean().default(false),
   APP_MQTT_PORT: z.coerce.number().int().min(1).max(65535).default(1884),

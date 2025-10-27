@@ -3,7 +3,7 @@
  * This is only a minimal backend to get started.
  */
 
-import { Logger } from '@nestjs/common';
+import { ConsoleLogger, LOG_LEVELS, Logger, LogLevel } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app/app.module';
@@ -19,6 +19,10 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const configService = app.get<TypedConfigService>(ConfigService);
+
+  const logLevel = configService.getOrThrow<LogLevel>('LOG_LEVEL');
+  const logger = new ConsoleLogger({ logLevels: LOG_LEVELS.slice(LOG_LEVELS.indexOf(logLevel)) });
+  app.useLogger(logger);
 
   const trustProxy = configService.getOrThrow<boolean>('APP_TRUST_PROXY');
   app.set('trust proxy', trustProxy ? 1 : 0);
