@@ -6,3 +6,8 @@ output "webadmin_password" {
   value     = random_password.webadmin_password.result
   sensitive = true
 }
+
+output "basic_auth_password" {
+  value     = random_password.basic_auth.result
+  sensitive = true
+}
