@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { MqttModule } from './mqtt/mqtt.module';
@@ -16,6 +16,7 @@ import { AnyExceptionFilter, ZodErrorFilter, TypeormErrorFilter } from './lib/fi
 import { CONFIG_SCHEMA, TypedConfigService } from './lib/config';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AgentModule } from './agent/agent.module';
+import { AuthMiddleware, AuthModule } from './auth';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { AgentModule } from './agent/agent.module';
       },
       inject: [ConfigService],
     }),
+    AuthModule,
     MqttModule,
     DeviceModule,
     AgentModule,
@@ -74,4 +76,15 @@ import { AgentModule } from './agent/agent.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthMiddleware)
+      .exclude(
+        { path: '/auth/login', method: RequestMethod.GET },
+        { path: '/auth/login', method: RequestMethod.POST },
+        { path: '/auth/logout', method: RequestMethod.GET }
+      )
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

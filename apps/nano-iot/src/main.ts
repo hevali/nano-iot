@@ -12,6 +12,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { Request, Response, NextFunction } from 'express';
 import { TypedConfigService } from './app/lib/config';
+import session from 'express-session';
 
 const DOCS_PATH = 'docs';
 
@@ -42,6 +43,20 @@ async function bootstrap() {
   const config = new DocumentBuilder().setTitle('Nano IoT API').build();
   const openApiDoc = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(DOCS_PATH, app, cleanupOpenApiDoc(openApiDoc));
+
+  const sessionSecret = configService.getOrThrow<string>('APP_SESSION_SECRET');
+  app.use(
+    session({
+      secret: sessionSecret,
+      cookie: {
+        secure: 'auto',
+        httpOnly: true,
+        sameSite: 'strict',
+      },
+      resave: false,
+      saveUninitialized: false,
+    })
+  );
 
   const port = configService.getOrThrow<number>('PORT');
   await app.listen(port);
