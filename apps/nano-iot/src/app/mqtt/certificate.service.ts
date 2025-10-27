@@ -57,7 +57,7 @@ export class CertificateService implements OnModuleInit {
 
   getMqttTlsConfig(): TlsOptions {
     return {
-      ca: this.mqttCert,
+      ca: [this.mqttCert],
       cert: this.serverCert,
       key: this.serverKey,
     };
@@ -65,11 +65,19 @@ export class CertificateService implements OnModuleInit {
 
   async createCertificate(clientId: string): Promise<Credentials> {
     const { key } = await pem.createPrivateKey(2048);
-    const { csr } = await pem.createCSR({ clientKey: key, commonName: clientId });
+    const { csr } = await pem.createCSR({
+      clientKey: key,
+      commonName: clientId,
+    });
     const { certificate } = await pem.createCertificate({
       csr,
       serviceKey: this.mqttKey,
       serviceCertificate: this.mqttCert,
+      config: `[v3_req]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+basicConstraints = critical, CA:false
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment`,
     });
 
     this.logger.log(`Created certificate for client ${clientId}`);

@@ -6,6 +6,7 @@ services:
     ports:
       - '80:80'
       - '443:443'
+      - '8883:8883'
     volumes:
       - ~/nginx:/etc/nginx
       - /etc/letsencrypt:/etc/letsencrypt
@@ -16,8 +17,6 @@ services:
     restart: always
     pull_policy: always
     env_file: ~/nano-iot/.env
-    ports:
-      - '8883:8883'
     volumes:
       - ~/nano-iot/data:/data
       - /etc/letsencrypt/live/${hostname}/fullchain.pem:/certs/server.crt

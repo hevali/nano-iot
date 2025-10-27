@@ -66,6 +66,7 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
         requestCert: true,
         rejectUnauthorized: false,
         minVersion: 'TLSv1.2',
+        enableTrace: true
       },
       trustProxy,
     });

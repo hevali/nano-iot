@@ -4,18 +4,19 @@ resource "tls_private_key" "root" {
 }
 
 resource "tls_self_signed_cert" "root" {
+  # 10 years
   validity_period_hours = 24 * 365 * 10
   private_key_pem       = tls_private_key.root.private_key_pem
-  allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
-    "server_auth",
-    "cert_signing"
-  ]
-  is_ca_certificate = true
   subject {
     common_name = local.hostname
   }
+  # digitalSignature, cRLSign, keyCertSign
+  allowed_uses = [
+    "digital_signature",
+    "crl_signing",
+    "cert_signing"
+  ]
+  is_ca_certificate = true
 }
 
 resource "ssh_resource" "docker_compose_file" {
@@ -68,7 +69,7 @@ PORT="3000"
 NODE_ENV="production"
 
 APP_TRUST_PROXY="true"
-APP_MQTT_PORT="8883"
+APP_MQTT_PORT="1883"
 
 APP_MQTT_SERVER_KEY_PATH="/certs/server.key"
 APP_MQTT_SERVER_CERT_PATH="/certs/server.crt"
@@ -83,10 +84,31 @@ EOT
   depends_on = [ssh_resource.create_webadmin_user]
 }
 
-resource "ssh_resource" "docker_compose_restart" {
+resource "ssh_resource" "docker_compose_down" {
   triggers = {
     always_run = "${timestamp()}"
   }
+
+  when = "destroy"
+
+  host                               = hcloud_server.server.ipv4_address
+  user                               = "webadmin"
+  private_key                        = file(var.ssh_key_path)
+  ignore_no_supported_methods_remain = true
+
+  commands = [
+    "docker compose -f ~/docker-compose.yml down"
+  ]
+
+  depends_on = [ssh_resource.docker_compose_file]
+}
+
+resource "ssh_resource" "docker_compose_up" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+
+  when = "create"
 
   host                               = hcloud_server.server.ipv4_address
   user                               = "webadmin"
@@ -95,9 +117,8 @@ resource "ssh_resource" "docker_compose_restart" {
 
   commands = [
     "echo ${var.github_token} | docker login ghcr.io -u USERNAME --password-stdin",
-    "docker compose -f ~/docker-compose.yml down",
     "docker compose -f ~/docker-compose.yml up -d"
   ]
 
-  depends_on = [ssh_resource.docker_compose_file, ssh_resource.dotenv_file]
+  depends_on = [ssh_resource.docker_compose_file, ssh_resource.dotenv_file, ssh_resource.docker_compose_down]
 }
