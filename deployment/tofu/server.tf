@@ -1,5 +1,5 @@
 locals {
-  server_user = local.server_user
+  server_user = "webadmin"
   hostname    = "${hcloud_zone_rrset.app.name}.${data.hcloud_zone.main.name}"
 }
 
