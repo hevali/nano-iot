@@ -5,11 +5,13 @@ import { promisify } from 'util';
 import type { TypedConfigService } from '../lib/config';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { ApiExcludeController } from '@nestjs/swagger';
 
 interface SessionEnd extends session.Session {
   user: unknown | null;
 }
 
+@ApiExcludeController()
 @Controller('auth')
 export class AuthController {
   constructor(@Inject(ConfigService) private configService: TypedConfigService) {}
@@ -23,7 +25,7 @@ export class AuthController {
     }
 
     const error = req.query.error
-      ? `<div style="color: 'red'">Incorrect user and password</div>`
+      ? `<div style="color: red">Incorrect user and password</div>`
       : '';
     const html =
       error +
