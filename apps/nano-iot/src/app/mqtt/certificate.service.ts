@@ -23,6 +23,12 @@ export class CertificateService implements OnModuleInit {
   private mqttCert!: string;
   private mqttKey!: string;
 
+  private certsPath = path.join(
+    this.configService.getOrThrow<string>('APP_DATA_PATH'),
+    'data',
+    'certs'
+  );
+
   constructor(@Inject(ConfigService) private configService: TypedConfigService) {}
 
   async onModuleInit() {
@@ -87,8 +93,7 @@ keyUsage = nonRepudiation, digitalSignature, keyEncipherment`,
 
     this.logger.log(`Verified certificate chain`);
 
-    const certsPath = path.join(this.configService.getOrThrow<string>('APP_MQTT_CERTS_DIR'));
-    await fs.outputFile(path.join(certsPath, `${clientId}.crt`), certificate);
+    await fs.outputFile(path.join(this.certsPath, `${clientId}.crt`), certificate);
 
     return { ca: this.mqttCert, certificate, key };
   }

@@ -13,6 +13,10 @@ import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { Request, Response, NextFunction } from 'express';
 import { TypedConfigService } from './app/lib/config';
 import session from 'express-session';
+import type { FileStore } from 'session-file-store';
+import * as path from 'path';
+
+const FileStore: FileStore = require('session-file-store')(session);
 
 const DOCS_PATH = 'docs';
 
@@ -44,9 +48,17 @@ async function bootstrap() {
   const openApiDoc = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(DOCS_PATH, app, cleanupOpenApiDoc(openApiDoc));
 
+  const sessionStorePath = path.join(configService.getOrThrow<string>('APP_DATA_PATH'), 'sessions');
   const sessionSecret = configService.getOrThrow<string>('APP_SESSION_SECRET');
   app.use(
     session({
+      store: new FileStore({
+        path: sessionStorePath,
+        reapAsync: true,
+        logFn: () => {
+          // empty
+        },
+      }),
       secret: sessionSecret,
       cookie: {
         secure: 'auto',

@@ -11,7 +11,6 @@ export const CONFIG_SCHEMA = z.object({
   APP_TRUST_PROXY: z.coerce.boolean().default(false),
 
   APP_MQTT_PORT: z.coerce.number().int().min(1).max(65535).default(1884),
-  APP_MQTT_CERTS_DIR: z.string().default(path.join(__dirname, '..', 'certs')),
 
   APP_MQTT_SERVER_CERT: z.string().optional(),
   APP_MQTT_SERVER_CERT_PATH: z.string().optional(),
@@ -25,7 +24,7 @@ export const CONFIG_SCHEMA = z.object({
 
   APP_GEMINI_API_KEY: z.string(),
 
-  APP_DATA_PATH: z.string().default(path.join(__dirname, '..')),
+  APP_DATA_PATH: z.string().default(path.join(__dirname, '..', 'data')),
   APP_SESSION_SECRET: z.string(),
   APP_INITIAL_USER: z.string(),
 });
