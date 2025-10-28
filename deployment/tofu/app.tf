@@ -81,11 +81,6 @@ resource "ssh_resource" "nginx_htpasswd_file" {
   }
 
   depends_on = [ssh_resource.acquire_certificate]
-
-  lifecycle {
-    # Sensitive content forces update
-    ignore_changes = [file]
-  }
 }
 
 resource "ssh_resource" "dotenv_file" {
@@ -106,7 +101,7 @@ NODE_ENV="production"
 APP_TRUST_PROXY="true"
 APP_DATA_PATH="/data"
 APP_SESSION_SECRET="${random_password.session_secret.result}"
-APP_INITIAL_USER="user:${bcrypt(random_password.basic_auth.result)}"
+APP_INITIAL_USER="user:${replace(bcrypt(random_password.basic_auth.result), "$", "\\$")}"
 
 APP_MQTT_PORT="1883"
 APP_MQTT_SERVER_KEY_PATH="/certs/server.key"

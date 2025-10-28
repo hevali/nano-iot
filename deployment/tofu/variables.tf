@@ -1,5 +1,6 @@
 variable "hcloud_token" {
-  type = string
+  type      = string
+  sensitive = true
 }
 
 variable "dns_zone" {
@@ -11,9 +12,11 @@ variable "ssh_key_path" {
 }
 
 variable "github_token" {
-  type = string
+  type      = string
+  sensitive = true
 }
 
 variable "gemini_api_key" {
-  type = string
+  type      = string
+  sensitive = true
 }

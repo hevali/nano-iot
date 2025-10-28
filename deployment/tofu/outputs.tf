@@ -7,7 +7,7 @@ output "webadmin_password" {
   sensitive = true
 }
 
-output "basic_auth_password" {
+output "user_password" {
   value     = random_password.basic_auth.result
   sensitive = true
 }
