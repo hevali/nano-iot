@@ -35,7 +35,7 @@ resource "ssh_resource" "docker_compose_file" {
   when = "create"
 
   host                               = hcloud_server.server.ipv4_address
-  user                               = "webadmin"
+  user                               = local.server_user
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
@@ -51,7 +51,7 @@ resource "ssh_resource" "nginx_config_file" {
   when = "create"
 
   host                               = hcloud_server.server.ipv4_address
-  user                               = "webadmin"
+  user                               = local.server_user
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
@@ -69,7 +69,7 @@ resource "ssh_resource" "nginx_htpasswd_file" {
   when = "create"
 
   host                               = hcloud_server.server.ipv4_address
-  user                               = "webadmin"
+  user                               = local.server_user
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
@@ -87,7 +87,7 @@ resource "ssh_resource" "dotenv_file" {
   when = "create"
 
   host                               = hcloud_server.server.ipv4_address
-  user                               = "webadmin"
+  user                               = local.server_user
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
@@ -114,8 +114,6 @@ APP_GEMINI_API_KEY="${var.gemini_api_key}"
 EOT
     destination = "~/nano-iot/.env"
   }
-
-  depends_on = [ssh_resource.create_webadmin_user]
 }
 
 resource "ssh_resource" "docker_compose_down" {
@@ -126,7 +124,7 @@ resource "ssh_resource" "docker_compose_down" {
   when = "destroy"
 
   host                               = hcloud_server.server.ipv4_address
-  user                               = "webadmin"
+  user                               = local.server_user
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
@@ -145,7 +143,7 @@ resource "ssh_resource" "docker_compose_up" {
   when = "create"
 
   host                               = hcloud_server.server.ipv4_address
-  user                               = "webadmin"
+  user                               = local.server_user
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
