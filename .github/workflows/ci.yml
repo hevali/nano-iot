@@ -46,9 +46,9 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - run: docker build -f apps/nano-iot/Dockerfile -t ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/nano-iot:latest .
+      - run: docker build -f apps/backend/Dockerfile -t ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/backend:latest .
       - run: docker build -f apps/frontend/Dockerfile -t ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/frontend:latest .
-      - run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/nano-iot:latest
+      - run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/backend:latest
       - run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/frontend:latest
   deploy:
     runs-on: ubuntu-latest

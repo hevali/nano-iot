@@ -11,11 +11,9 @@ if (!device) {
 async function main() {
   const client = connect('mqtts://localhost:1884', {
     rejectUnauthorized: false,
-    ca: await fs.readFile(path.join(process.cwd(), './apps/nano-iot/certs/root.crt')),
-    key: await fs.readFile(path.join(process.cwd(), `./apps/nano-iot/certs/clients/${device}.key`)),
-    cert: await fs.readFile(
-      path.join(process.cwd(), `./apps/nano-iot/certs/clients/${device}.crt`)
-    ),
+    ca: await fs.readFile(path.join(process.cwd(), './apps/backend/certs/root.crt')),
+    key: await fs.readFile(path.join(process.cwd(), `./apps/backend/certs/clients/${device}.key`)),
+    cert: await fs.readFile(path.join(process.cwd(), `./apps/backend/certs/clients/${device}.crt`)),
     protocolVersion: 4,
     reconnectPeriod: 5000,
   });

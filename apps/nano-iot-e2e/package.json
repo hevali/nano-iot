@@ -4,7 +4,7 @@
   "private": true,
   "nx": {
     "implicitDependencies": [
-      "@nano-iot/nano-iot"
+      "@nano-iot/backend"
     ],
     "targets": {
       "e2e": {
@@ -17,8 +17,8 @@
           "passWithNoTests": true
         },
         "dependsOn": [
-          "@nano-iot/nano-iot:build",
-          "@nano-iot/nano-iot:serve"
+          "@nano-iot/backend:build",
+          "@nano-iot/backend:serve"
         ]
       }
     }

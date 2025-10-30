@@ -7,7 +7,7 @@ COPY apps/ ./apps
 COPY libs/ ./libs
 
 RUN npm install --legacy-peer-deps --silent
-RUN npx nx build nano-iot --prod
+RUN npx nx build backend --prod
 
 FROM docker.io/node:22-alpine
 
@@ -15,8 +15,8 @@ RUN apk add openssl
 
 WORKDIR /app
 
-COPY --from=builder /app/apps/nano-iot/dist ./apps/nano-iot/dist
-RUN cd ./apps/nano-iot/dist && npm install --only=production --silent
+COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+RUN cd ./apps/backend/dist && npm install --only=production --silent
 
 COPY --from=builder /app/libs/common/dist ./libs/common/dist
 COPY --from=builder /app/libs/common/package.json ./libs/common
@@ -24,4 +24,4 @@ COPY --from=builder /app/libs/common/package.json ./libs/common
 COPY --from=builder /app/package.json /app/package-lock.json ./
 RUN npm install --only=production --silent
 
-CMD ["node", "apps/nano-iot/dist/main.js"]
+CMD ["node", "apps/backend/dist/main.js"]

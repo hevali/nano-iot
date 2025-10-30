@@ -7,7 +7,7 @@
       "path": "./apps/nano-iot-e2e"
     },
     {
-      "path": "./apps/nano-iot"
+      "path": "./apps/backend"
     },
     {
       "path": "./libs/common"

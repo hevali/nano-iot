@@ -73,7 +73,7 @@ resource "ssh_resource" "dotenv_file" {
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
-  pre_commands = ["mkdir -p ~/nano-iot"]
+  pre_commands = ["mkdir -p ~/backend"]
 
   file {
     content     = <<EOT
@@ -94,7 +94,7 @@ APP_MQTT_TLS_CERT="${tls_self_signed_cert.root.cert_pem}"
 
 APP_GEMINI_API_KEY="${var.gemini_api_key}"
 EOT
-    destination = "~/nano-iot/.env"
+    destination = "~/backend/.env"
   }
 }
 

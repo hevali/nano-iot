@@ -1,5 +1,5 @@
 {
-  "name": "@nano-iot/nano-iot",
+  "name": "@nano-iot/backend",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -11,7 +11,7 @@
           "args": [
             "--node-env=production"
           ],
-          "cwd": "apps/nano-iot"
+          "cwd": "apps/backend"
         },
         "configurations": {
           "development": {
@@ -28,8 +28,8 @@
         "cache": true,
         "executor": "@nx/js:prune-lockfile",
         "outputs": [
-          "{workspaceRoot}/apps/nano-iot/dist/package.json",
-          "{workspaceRoot}/apps/nano-iot/dist/package-lock.json"
+          "{workspaceRoot}/apps/backend/dist/package.json",
+          "{workspaceRoot}/apps/backend/dist/package-lock.json"
         ],
         "options": {
           "buildTarget": "build"
@@ -41,7 +41,7 @@
         ],
         "cache": true,
         "outputs": [
-          "{workspaceRoot}/apps/nano-iot/dist/workspace_modules"
+          "{workspaceRoot}/apps/backend/dist/workspace_modules"
         ],
         "executor": "@nx/js:copy-workspace-modules",
         "options": {
@@ -63,15 +63,15 @@
           "build"
         ],
         "options": {
-          "buildTarget": "@nano-iot/nano-iot:build",
+          "buildTarget": "@nano-iot/backend:build",
           "runBuildTargetDependencies": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@nano-iot/nano-iot:build:development"
+            "buildTarget": "@nano-iot/backend:build:development"
           },
           "production": {
-            "buildTarget": "@nano-iot/nano-iot:build:production"
+            "buildTarget": "@nano-iot/backend:build:production"
           }
         }
       },
@@ -86,7 +86,8 @@
           "prune"
         ]
       }
-    }
+    },
+    "name": "@nano-iot/backend"
   },
   "dependencies": {
     "@golevelup/nestjs-discovery": "^5.0.0",

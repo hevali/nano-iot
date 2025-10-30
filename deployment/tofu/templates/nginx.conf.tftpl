@@ -41,7 +41,7 @@ http {
 
           rewrite /api/(.*) /$1  break;
 
-          proxy_pass http://nano-iot:3000/;
+          proxy_pass http://backend:3000/;
           proxy_redirect     off;
       }
 
@@ -70,6 +70,6 @@ stream {
   server {
       server_name ${hostname};
       listen 8883;
-      proxy_pass nano-iot:1883;
+      proxy_pass backend:1883;
   }
 }

@@ -11,15 +11,15 @@ services:
       - ~/nginx:/etc/nginx
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      - nano-iot
+      - backend
       - frontend
-  nano-iot:
-    image: ghcr.io/hevali/nano-iot
+  backend:
+    image: ghcr.io/hevali/backend
     restart: always
     pull_policy: always
-    env_file: ~/nano-iot/.env
+    env_file: ~/backend/.env
     volumes:
-      - ~/nano-iot/data:/data
+      - ~/backend/data:/data
       - /etc/letsencrypt/live/${hostname}/fullchain.pem:/certs/server.crt:ro
       - /etc/letsencrypt/live/${hostname}/privkey.pem:/certs/server.key:ro
   frontend:
