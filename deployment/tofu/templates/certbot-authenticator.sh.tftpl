@@ -1,0 +1,27 @@
+#!/bin/bash
+
+DNS_ZONE="${dns_zone}"
+CREATE_DOMAIN="_acme-challenge.$${CERTBOT_DOMAIN/"."$DNS_ZONE/""}"
+TOKEN=${hetzner_api_token}
+
+RESPONSE=$(curl -s -w "%%{http_code}" "https://api.hetzner.cloud/v1/zones/$DNS_ZONE/rrsets/$CREATE_DOMAIN/TXT" \
+                   -H "Authorization: Bearer $TOKEN")
+HTTP_CODE=$${RESPONSE: -3}
+
+if [[ $HTTP_CODE -eq 200 ]]; then
+    # Add to TXT records
+    echo $RECORDS
+    curl -s -X POST "https://api.hetzner.cloud/v1/zones/$DNS_ZONE/rrsets/$CREATE_DOMAIN/TXT/actions/add_records" \
+        -H     "Authorization: Bearer $TOKEN" \
+        -H     "Content-Type: application/json" \
+        --data '{"type":"TXT","name":"'$CREATE_DOMAIN'","records":[{"value":"\"'$CERTBOT_VALIDATION'\"","comment":"Certbot DNS-01"}],"ttl":120}' > /dev/null
+else
+    # Create TXT record
+    curl -s -X POST "https://api.hetzner.cloud/v1/zones/$DNS_ZONE/rrsets" \
+        -H     "Authorization: Bearer $TOKEN" \
+        -H     "Content-Type: application/json" \
+        --data '{"type":"TXT","name":"'$CREATE_DOMAIN'","records":[{"value":"\"'$CERTBOT_VALIDATION'\"","comment":"Certbot DNS-01"}],"ttl":120}' > /dev/null
+fi
+
+# Sleep to make sure the change has time to propagate over to DNS
+sleep 35

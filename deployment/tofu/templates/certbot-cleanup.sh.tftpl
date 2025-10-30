@@ -1,0 +1,9 @@
+#!/bin/bash
+
+DNS_ZONE="${dns_zone}"
+CREATE_DOMAIN="_acme-challenge.$${CERTBOT_DOMAIN/"."$DNS_ZONE/""}"
+
+# Remove the challenge TXT record from the zone
+curl -s -X DELETE "https://api.hetzner.cloud/v1/zones/$DNS_ZONE/rrsets/$CREATE_DOMAIN/TXT" \
+        -H "Authorization: Bearer ${hetzner_api_token}" \
+        -H "Content-Type: application/json" > /dev/null
