@@ -16,6 +16,12 @@ const items = ref<MenuItem[]>([
     route: '/about',
   },
 ]);
+
+const redirectTo = new URL(
+  (import.meta.env.BASE_URL + '/login').replace('//', '/'),
+  location.origin
+).pathname;
+const logoutUrl = `/api/auth/logout?redirectTo=${encodeURIComponent(redirectTo)}`;
 </script>
 
 <template>
@@ -35,7 +41,7 @@ const items = ref<MenuItem[]>([
     </template>
     <template #end>
       <div class="flex items-center gap-2">
-        <a v-ripple href="/api/auth/logout?redirectTo=/login">
+        <a v-ripple :href="logoutUrl">
           <span class="pi pi-sign-out" />
         </a>
       </div>

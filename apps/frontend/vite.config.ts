@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(() => ({
   root: __dirname,
+  base: './',
   cacheDir: '../../node_modules/.vite/apps/frontend',
   server: {
     port: 4200,

@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Container from '../app/Container.vue';
-import api from '../services/api';
+import { http } from '../services/api';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -12,20 +12,20 @@ const router = createRouter({
       beforeEnter: async () => {
         try {
           // Ensure user is logged in.
-          await api.get('/api/auth/user');
+          await http.get('/api/auth/user');
           return true;
         } catch {
-          return false;
+          return '/login';
         }
       },
       children: [
         {
-          path: 'home',
+          path: '/home',
           name: 'home',
           component: () => import('../views/HomeView.vue'),
         },
         {
-          path: 'about',
+          path: '/about',
           name: 'about',
           component: () => import('../views/AboutView.vue'),
         },
@@ -35,7 +35,17 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
+      beforeEnter: async () => {
+        try {
+          // Ensure user is logged in.
+          await http.get('/api/auth/user');
+          return '/home';
+        } catch {
+          return true;
+        }
+      },
     },
+    { path: '/:pathMatch(.*)*', redirect: '/home' },
   ],
 });
 

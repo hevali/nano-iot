@@ -9,7 +9,7 @@ import { useToast } from 'primevue/usetoast';
 import { z } from 'zod';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '../services/api';
+import { api } from '../services/api';
 import logoUrl from '../../assets/logo.svg?no-inline';
 
 const router = useRouter();
