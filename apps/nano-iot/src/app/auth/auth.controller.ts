@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Post, Req, Res } from '@nestjs/common';
+import { Controller, Get, Inject, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import session from 'express-session';
 import { promisify } from 'util';
@@ -25,13 +25,13 @@ export class AuthController {
     }
 
     const error = req.query.error
-      ? `<div style="color: red">Incorrect user and password</div>`
+      ? `<div style="color: red">Incorrect username or password</div>`
       : '';
     const html =
       error +
       `<form action="/auth/login" method="post">
-Username: <input name="user"><br>
-Password: <input name="pass" type="password"><br>
+Username: <input name="username"><br>
+Password: <input name="password" type="password"><br>
 <input type="submit" text="Login"></form>`;
 
     res.clearCookie('connect.sid').send(html);
@@ -40,20 +40,50 @@ Password: <input name="pass" type="password"><br>
   @Post('login')
   async doLogin(@Req() req: Request, @Res() res: Response) {
     const [user, hash] = this.configService.getOrThrow<string>('APP_INITIAL_USER').split(':');
-    const match = await bcrypt.compare(req.body.pass, hash);
-    if (!match || user !== req.body.user) {
-      res.redirect(302, '/auth/login?error=1');
-      return;
+    const match = await bcrypt.compare(req.body.password, hash);
+    if (!match || user !== req.body.username) {
+      if (req.accepts('html')) {
+        res.redirect(302, '/auth/login?error=1');
+        return;
+      }
+
+      throw new UnauthorizedException('Incorrect username or password');
     }
 
     await promisify(req.session.regenerate.bind(req.session))();
-    req.session.user = { username: req.body.user };
+    req.session.user = { username: req.body.username };
     await promisify(req.session.save.bind(req.session))();
 
-    res.redirect(302, '/docs');
+    if (req.accepts('html')) {
+      res.redirect(302, '/docs');
+    } else {
+      res.json({});
+    }
   }
 
   @Get('logout')
+  async logout(@Req() req: Request, @Res() res: Response) {
+    if (req.session.user) {
+      (req.session as SessionEnd).user = null;
+      await promisify(req.session.save.bind(req.session))();
+      await promisify(req.session.regenerate.bind(req.session))();
+      await promisify(req.session.destroy.bind(req.session))();
+    }
+
+    // Only allow relative paths.
+    let redirectTo = req.query['redirectTo'] || '/';
+    if (typeof redirectTo !== 'string' || !redirectTo.startsWith('/')) {
+      redirectTo = '/';
+    }
+
+    if (req.accepts('html')) {
+      res.clearCookie('connect.sid').redirect(302, redirectTo);
+    } else {
+      res.clearCookie('connect.sid').json({});
+    }
+  }
+
+  @Post('logout')
   async doLogout(@Req() req: Request, @Res() res: Response) {
     if (req.session.user) {
       (req.session as SessionEnd).user = null;
@@ -62,6 +92,11 @@ Password: <input name="pass" type="password"><br>
       await promisify(req.session.destroy.bind(req.session))();
     }
 
-    res.clearCookie('connect.sid').redirect(302, '/auth/login');
+    res.clearCookie('connect.sid').json({});
+  }
+
+  @Get('user')
+  async user(@Req() req: Request) {
+    return req.session.user as any;
   }
 }

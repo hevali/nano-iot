@@ -2,7 +2,9 @@ FROM docker.io/node:22-alpine AS builder
 
 WORKDIR /app
 
-COPY . .
+COPY package*.json tsconfig.json tsconfig.base.json nx.json ./
+COPY apps/ ./apps
+COPY libs/ ./libs
 
 RUN npm install --legacy-peer-deps --silent
 RUN npx nx build nano-iot --prod

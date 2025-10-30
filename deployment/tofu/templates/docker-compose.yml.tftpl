@@ -12,6 +12,7 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - nano-iot
+      - frontend
   nano-iot:
     image: ghcr.io/hevali/nano-iot
     restart: always
@@ -21,3 +22,7 @@ services:
       - ~/nano-iot/data:/data
       - /etc/letsencrypt/live/${hostname}/fullchain.pem:/certs/server.crt:ro
       - /etc/letsencrypt/live/${hostname}/privkey.pem:/certs/server.key:ro
+  frontend:
+    image: ghcr.io/hevali/frontend
+    restart: always
+    pull_policy: always

@@ -154,9 +154,9 @@ resource "hcloud_zone_rrset" "app" {
   ]
 }
 
-resource "hcloud_zone_rrset" "www_app" {
+resource "hcloud_zone_rrset" "wildcard" {
   zone = data.hcloud_zone.main.name
-  name = "www.app"
+  name = "*.app"
   type = "A"
 
   ttl = 720
