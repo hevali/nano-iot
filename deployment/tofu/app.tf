@@ -19,7 +19,7 @@ resource "tls_self_signed_cert" "root" {
   is_ca_certificate = true
 }
 
-resource "random_password" "basic_auth" {
+resource "random_password" "user_password" {
   length           = 8
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
@@ -65,24 +65,6 @@ resource "ssh_resource" "nginx_config_file" {
   depends_on = [ssh_resource.acquire_certificate]
 }
 
-resource "ssh_resource" "nginx_htpasswd_file" {
-  when = "create"
-
-  host                               = hcloud_server.server.ipv4_address
-  user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
-  ignore_no_supported_methods_remain = true
-
-  pre_commands = ["mkdir -p ~/nginx"]
-
-  file {
-    content     = "user:${bcrypt(random_password.basic_auth.result)}"
-    destination = "~/nginx/.htpasswd"
-  }
-
-  depends_on = [ssh_resource.acquire_certificate]
-}
-
 resource "ssh_resource" "dotenv_file" {
   when = "create"
 
@@ -101,7 +83,7 @@ NODE_ENV="production"
 APP_TRUST_PROXY="true"
 APP_DATA_PATH="/data"
 APP_SESSION_SECRET="${random_password.session_secret.result}"
-APP_INITIAL_USER="user:${replace(bcrypt(random_password.basic_auth.result), "$", "\\$")}"
+APP_INITIAL_USER="user:${replace(bcrypt(random_password.user_password.result), "$", "\\$")}"
 
 APP_MQTT_PORT="1883"
 APP_MQTT_SERVER_KEY_PATH="/certs/server.key"

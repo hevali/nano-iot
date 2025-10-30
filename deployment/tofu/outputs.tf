@@ -3,6 +3,6 @@ output "server_ip" {
 }
 
 output "user_password" {
-  value     = random_password.basic_auth.result
+  value     = random_password.user_password.result
   sensitive = true
 }
