@@ -210,6 +210,25 @@ resource "ssh_resource" "certbot_cleanup_hook" {
   ]
 }
 
+resource "ssh_resource" "certbot_deploy_hook" {
+  when = "create"
+
+  host                               = hcloud_server.server.ipv4_address
+  user                               = local.server_user
+  private_key                        = file(var.ssh_key_path)
+  ignore_no_supported_methods_remain = true
+
+  file {
+    content     = "docker compose -f ~/docker-compose.yml exec nginx nginx -s reload"
+    destination = "~/certbot-deploy.sh"
+  }
+
+  commands = [
+    "sudo mv -f ~/certbot-deploy.sh /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh",
+    "sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh"
+  ]
+}
+
 resource "ssh_resource" "acquire_certificate" {
   when = "create"
 
@@ -226,5 +245,5 @@ resource "ssh_resource" "acquire_certificate" {
     "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/letsencrypt/ssl-dhparams.pem\""
   ]
 
-  depends_on = [ssh_resource.certbot_authenticator_hook, ssh_resource.certbot_cleanup_hook]
+  depends_on = [ssh_resource.certbot_authenticator_hook, ssh_resource.certbot_cleanup_hook, ssh_resource.certbot_deploy_hook]
 }
