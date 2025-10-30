@@ -48,7 +48,7 @@ async function bootstrap() {
 
   let doc = new DocumentBuilder().setTitle('Nano IoT API').addCookieAuth('connect.sid');
   if (basePath) {
-    doc = doc.setBasePath(basePath).addCookieAuth();
+    doc = doc.addServer(basePath);
   }
 
   const openApiDoc = SwaggerModule.createDocument(app, doc.build());
