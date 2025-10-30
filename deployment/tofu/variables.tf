@@ -7,6 +7,11 @@ variable "dns_zone" {
   type = string
 }
 
+variable "sub_domain" {
+  type     = string
+  nullable = true
+}
+
 variable "ssh_key_path" {
   type = string
 }

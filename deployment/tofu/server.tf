@@ -1,6 +1,6 @@
 locals {
   server_user = "webadmin"
-  hostname    = "${hcloud_zone_rrset.app.name}.${data.hcloud_zone.main.name}"
+  hostname    = length(hcloud_zone_rrset.app) == 1 ? "${hcloud_zone_rrset.app[0].name}.${data.hcloud_zone.main.name}" : data.hcloud_zone.main.name
 }
 
 resource "hcloud_ssh_key" "key" {
@@ -143,9 +143,10 @@ EOT
 }
 
 resource "hcloud_zone_rrset" "app" {
-  zone = data.hcloud_zone.main.name
-  name = "app"
-  type = "A"
+  count = var.sub_domain == null ? 0 : 1
+  zone  = data.hcloud_zone.main.name
+  name  = var.sub_domain
+  type  = "A"
 
   ttl = 720
 
@@ -156,7 +157,7 @@ resource "hcloud_zone_rrset" "app" {
 
 resource "hcloud_zone_rrset" "wildcard" {
   zone = data.hcloud_zone.main.name
-  name = "*.app"
+  name = length(hcloud_zone_rrset.app) == 1 ? "*.${hcloud_zone_rrset.app[0].name}" : "*"
   type = "A"
 
   ttl = 720
