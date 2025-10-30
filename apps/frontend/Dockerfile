@@ -7,7 +7,7 @@ COPY apps/ ./apps
 COPY libs/ ./libs
 
 RUN npm install --legacy-peer-deps --silent
-RUN npx nx build frontend --prod
+RUN npx nx build frontend --prod --base=/app
 
 FROM nginx:1.29-alpine
 
