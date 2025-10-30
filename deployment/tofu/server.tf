@@ -175,17 +175,18 @@ resource "ssh_resource" "certbot_authenticator_hook" {
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
+  pre_commands = ["mkdir -p ~/certbot"]
+
   file {
     content = templatefile("${path.module}/templates/certbot-authenticator.sh.tftpl", {
       hetzner_api_token : var.hcloud_token,
       dns_zone : data.hcloud_zone.main.name
     })
-    destination = "~/certbot-authenticator.sh"
+    destination = "~/certbot/authenticator.sh"
   }
 
   commands = [
-    "sudo mv -f ~/certbot-authenticator.sh /etc/letsencrypt/authenticator.sh",
-    "sudo chmod +x /etc/letsencrypt/authenticator.sh"
+    "sudo chmod +x ~/certbot/authenticator.sh"
   ]
 }
 
@@ -197,18 +198,37 @@ resource "ssh_resource" "certbot_cleanup_hook" {
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
+  pre_commands = ["mkdir -p ~/certbot"]
+
   file {
     content = templatefile("${path.module}/templates/certbot-cleanup.sh.tftpl", {
       hetzner_api_token : var.hcloud_token,
       dns_zone : data.hcloud_zone.main.name
     })
-    destination = "~/certbot-cleanup.sh"
+    destination = "~/certbot/cleanup.sh"
   }
 
   commands = [
-    "sudo mv -f ~/certbot-cleanup.sh /etc/letsencrypt/cleanup.sh",
-    "sudo chmod +x /etc/letsencrypt/cleanup.sh"
+    "sudo chmod +x ~/certbot/cleanup.sh"
   ]
+}
+
+resource "ssh_resource" "acquire_certificate" {
+  when = "create"
+
+  host                               = hcloud_server.server.ipv4_address
+  user                               = local.server_user
+  private_key                        = file(var.ssh_key_path)
+  ignore_no_supported_methods_remain = true
+
+  commands = [
+    "sudo certbot certonly --manual --agree-tos --preferred-challenges=dns --manual-auth-hook ~/certbot/authenticator.sh --manual-cleanup-hook ~/certbot/cleanup.sh -d ${local.hostname} -d *.${local.hostname} -n",
+    "echo \"0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q\" | sudo tee -a /etc/crontab > /dev/null",
+    "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /etc/letsencrypt/options-ssl-nginx.conf\"",
+    "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/letsencrypt/ssl-dhparams.pem\""
+  ]
+
+  depends_on = [ssh_resource.certbot_authenticator_hook, ssh_resource.certbot_cleanup_hook]
 }
 
 resource "ssh_resource" "certbot_deploy_hook" {
@@ -228,23 +248,6 @@ resource "ssh_resource" "certbot_deploy_hook" {
     "sudo mv -f ~/certbot-deploy.sh /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh",
     "sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh"
   ]
-}
 
-resource "ssh_resource" "acquire_certificate" {
-  when = "create"
-
-  host                               = hcloud_server.server.ipv4_address
-  user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
-  ignore_no_supported_methods_remain = true
-
-  commands = [
-    "sudo certbot certonly --manual --agree-tos --preferred-challenges=dns --manual-auth-hook /etc/letsencrypt/authenticator.sh --manual-cleanup-hook /etc/letsencrypt/cleanup.sh -d ${local.hostname} -d *.${local.hostname} -n",
-    "echo \"0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q\" | sudo tee -a /etc/crontab > /dev/null",
-    "mkdir -p ~/nginx",
-    "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /etc/letsencrypt/options-ssl-nginx.conf\"",
-    "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/letsencrypt/ssl-dhparams.pem\""
-  ]
-
-  depends_on = [ssh_resource.certbot_authenticator_hook, ssh_resource.certbot_cleanup_hook, ssh_resource.certbot_deploy_hook]
+  depends_on = [ssh_resource.acquire_certificate]
 }

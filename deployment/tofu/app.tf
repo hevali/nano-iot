@@ -80,8 +80,9 @@ resource "ssh_resource" "dotenv_file" {
 PORT="3000"
 NODE_ENV="production"
 
+APP_BASE_PATH="/api"
 APP_TRUST_PROXY="true"
-APP_DATA_PATH="/data"
+APP_DATA_DIR="/data"
 APP_SESSION_SECRET="${random_password.session_secret.result}"
 APP_INITIAL_USER="user:${replace(bcrypt(random_password.user_password.result), "$", "\\$")}"
 

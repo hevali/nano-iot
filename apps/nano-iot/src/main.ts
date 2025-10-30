@@ -44,11 +44,17 @@ async function bootstrap() {
     next();
   });
 
-  const config = new DocumentBuilder().setTitle('Nano IoT API').build();
-  const openApiDoc = SwaggerModule.createDocument(app, config);
+  const basePath = configService.get<string>('APP_BASE_PATH');
+
+  let doc = new DocumentBuilder().setTitle('Nano IoT API').addCookieAuth('connect.sid');
+  if (basePath) {
+    doc = doc.setBasePath(basePath).addCookieAuth();
+  }
+
+  const openApiDoc = SwaggerModule.createDocument(app, doc.build());
   SwaggerModule.setup(DOCS_PATH, app, cleanupOpenApiDoc(openApiDoc));
 
-  const sessionStorePath = path.join(configService.getOrThrow<string>('APP_DATA_PATH'), 'sessions');
+  const sessionStorePath = path.join(configService.getOrThrow<string>('APP_DATA_DIR'), 'sessions');
   const sessionSecret = configService.getOrThrow<string>('APP_SESSION_SECRET');
   app.use(
     session({

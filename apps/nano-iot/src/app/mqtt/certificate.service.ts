@@ -23,11 +23,7 @@ export class CertificateService implements OnModuleInit {
   private mqttCert!: string;
   private mqttKey!: string;
 
-  private certsPath = path.join(
-    this.configService.getOrThrow<string>('APP_DATA_PATH'),
-    'data',
-    'certs'
-  );
+  private certsPath = path.join(this.configService.getOrThrow<string>('APP_DATA_DIR'), 'certs');
 
   constructor(@Inject(ConfigService) private configService: TypedConfigService) {}
 

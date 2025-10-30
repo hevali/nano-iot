@@ -31,7 +31,7 @@ import { AuthMiddleware, AuthModule } from './auth';
       useFactory: (config: TypedConfigService) => {
         return {
           type: 'sqlite',
-          database: path.join(config.getOrThrow<string>('APP_DATA_PATH'), 'nano-iot.db'),
+          database: path.join(config.getOrThrow<string>('APP_DATA_DIR'), 'nano-iot.db'),
           busyErrorRetry: 3,
           namingStrategy: new SnakeNamingStrategy(),
           autoLoadEntities: true,

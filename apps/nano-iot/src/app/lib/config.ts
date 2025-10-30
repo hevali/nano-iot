@@ -24,9 +24,10 @@ export const CONFIG_SCHEMA = z.object({
 
   APP_GEMINI_API_KEY: z.string(),
 
-  APP_DATA_PATH: z.string().default(path.join(__dirname, '..', 'data')),
+  APP_DATA_DIR: z.string().default(path.join(__dirname, '..', 'data')),
   APP_SESSION_SECRET: z.string(),
   APP_INITIAL_USER: z.string(),
+  APP_BASE_PATH: z.string().optional(),
 });
 
 export type TypedConfigService = ConfigService<z.infer<typeof CONFIG_SCHEMA>>;
