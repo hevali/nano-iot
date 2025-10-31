@@ -221,11 +221,14 @@ resource "ssh_resource" "acquire_certificate" {
   private_key                        = file(var.ssh_key_path)
   ignore_no_supported_methods_remain = true
 
+  file {
+    content     = "0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q"
+    destination = "~/certbot-renew"
+  }
+
   commands = [
+    "sudo mv -f ~/certbot-renew /etc/cron.d/certbot-renew",
     "sudo certbot certonly --manual --agree-tos --preferred-challenges=dns --manual-auth-hook ~/certbot/authenticator.sh --manual-cleanup-hook ~/certbot/cleanup.sh -d ${local.hostname} -d *.${local.hostname} -n",
-    "echo \"0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q\" | sudo tee -a /etc/crontab > /dev/null",
-    "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /etc/letsencrypt/options-ssl-nginx.conf\"",
-    "sudo bash -c \"curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/letsencrypt/ssl-dhparams.pem\""
   ]
 
   depends_on = [ssh_resource.certbot_authenticator_hook, ssh_resource.certbot_cleanup_hook]

@@ -17,8 +17,8 @@ http {
       listen 443 ssl;
       server_name ${hostname};
 
-      ssl_certificate /etc/letsencrypt/live/${hostname}/fullchain.pem;
-      ssl_certificate_key /etc/letsencrypt/live/${hostname}/privkey.pem;
+      ssl_certificate /etc/letsencrypt/server.crt;
+      ssl_certificate_key /etc/letsencrypt/server.key;
 
       include /etc/letsencrypt/options-ssl-nginx.conf;
       ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
