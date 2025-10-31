@@ -64,7 +64,7 @@ const DeviceWithCredentialsDtoSchema = z.object({
 
 export class DeviceWithCredentialsDto extends createZodDto(DeviceWithCredentialsDtoSchema) {}
 
-const CreateDeviceDtoSchema = z.object({
+export const CreateDeviceDtoSchema = z.object({
   id: z
     .string()
     .min(3)
