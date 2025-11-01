@@ -199,7 +199,7 @@ onMounted(async () => {
   <Dialog
     modal
     header="Delete device"
-    :visible="deviceId?.length > 0"
+    :visible="!!deviceId"
     :closable="false"
     :style="{ width: '25rem' }"
   >
