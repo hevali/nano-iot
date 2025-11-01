@@ -98,11 +98,10 @@ export class CertificateService implements OnModuleInit {
 
     this.logger.warn('Setting up new CA, this is a one time task');
 
-    await fs.outputFile(this.configPath, this.getCaConfig(), 'utf-8');
-    await fs.ensureFile(this.databasePath);
-
     await fs.ensureDir(path.join(this.caPath, 'certs'));
     await fs.ensureDir(path.join(this.caPath, 'crl'));
+
+    await fs.ensureFile(this.databasePath);
 
     const databaseAttrPath = path.join(this.caPath, 'database.txt.attr');
     const databaseAttr = await fs.readFile(databaseAttrPath, 'utf-8').catch(() => '');
@@ -119,8 +118,11 @@ export class CertificateService implements OnModuleInit {
     const crlNumberPath = path.join(this.caPath, 'crl', 'crlnumber');
     const crlNumber = await fs.readFile(crlNumberPath, 'utf-8').catch(() => '');
     if (!crlNumber.length) {
-      await fs.outputFile(crlNumber, '1000', 'utf-8');
+      await fs.outputFile(crlNumberPath, '1000', 'utf-8');
     }
+
+    // This file last completes the setup
+    await fs.outputFile(this.configPath, this.getCaConfig(), 'utf-8');
 
     this.logger.log('CA setup completed');
   }
