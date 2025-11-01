@@ -1,41 +1,26 @@
 <script setup lang="ts">
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import { CreateDeviceDtoSchema, DeviceWithCredentialsDto, type DeviceDto } from '@nano-iot/common';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, defineAsyncComponent } from 'vue';
 import { api } from '../services/api';
 import { useToast } from 'primevue/usetoast';
 import { zodResolver } from '@primevue/forms/resolvers/zod';
 import { Form, FormField, type FormEmitsOptions } from '@primevue/forms';
 import Message from 'primevue/message';
 import Toast from 'primevue/toast';
-import Menu, { type MenuMethods } from 'primevue/menu';
-import type { MenuItem } from 'primevue/menuitem';
+import ProgressSpinner from 'primevue/progressspinner';
 import Textarea from 'primevue/textarea';
 import { watch } from 'vue';
 
+const DeviceTable = defineAsyncComponent({
+  loader: () => import('../app/DeviceTable.vue'),
+  loadingComponent: ProgressSpinner,
+});
+
 const toast = useToast();
 const resolver = ref(zodResolver(CreateDeviceDtoSchema));
-const deviceMenu = ref<MenuMethods>();
-const deviceMenuItems = ref<MenuItem[]>([
-  {
-    label: 'Edit',
-    icon: 'pi pi-pencil',
-  },
-  {
-    label: 'Delete',
-    icon: 'pi pi-trash',
-    class: 'menu-danger',
-    command: async () => {
-      if (deviceId.value) {
-        deleteDialogVisible.value = true;
-      }
-    },
-  },
-]);
 
 const createDialogVisible = ref(false);
 const deleteDialogVisible = ref(false);
@@ -69,13 +54,9 @@ const onFormSubmit: FormEmitsOptions['submit'] = async ({ valid, values }) => {
 const deleteDevice = async () => {
   await api.delete(`/api/devices/${deviceId.value}`);
   deleteDialogVisible.value = false;
+  deviceId.value = undefined;
   devices.value = await api.get('/api/devices').then((res) => res.data);
   toast.add({ severity: 'success', summary: 'Device deleted', life: 5000 });
-};
-
-const toggleMenu = (event: PointerEvent, id: string) => {
-  deviceMenu.value?.toggle(event);
-  deviceId.value = id;
 };
 
 onMounted(async () => {
@@ -106,25 +87,7 @@ onMounted(async () => {
   </div>
 
   <div class="card">
-    <DataTable :value="devices" tableStyle="min-width: 50rem">
-      <Column field="id" header="ID"></Column>
-      <Column field="createdAt" header="Created at"></Column>
-      <Column>
-        <template #body="slotProps">
-          <Button
-            type="button"
-            icon="pi pi-ellipsis-v"
-            severity="contrast"
-            variant="text"
-            rounded
-            @click="(ev) => toggleMenu(ev, slotProps.data.id)"
-            aria-haspopup="true"
-            aria-controls="overlay_menu"
-          />
-          <Menu ref="deviceMenu" id="overlay_menu" :model="deviceMenuItems" :popup="true" />
-        </template>
-      </Column>
-    </DataTable>
+    <DeviceTable :devices="devices" @delete="(id) => (deviceId = id)" />
   </div>
 
   <Toast />
@@ -163,12 +126,14 @@ onMounted(async () => {
           label="Cancel"
           severity="secondary"
           @click="createDialogVisible = false"
-        ></Button>
-        <Button type="submit" label="Save" :disabled="!$form.valid"></Button>
+        />
+        <Button type="submit" label="Save" :disabled="!$form.valid" />
       </div>
     </Form>
     <div v-else class="flex flex-col space-y-2">
-      <div class="mb-2"><b>Note down these credentials they will not be shown again.</b></div>
+      <div class="mb-2">
+        <b>Note down these credentials they will not be shown again.</b>
+      </div>
       <label class="mt-2">CA:</label>
       <Textarea v-model="deviceCredentials.ca" disabled rows="5" cols="30" class="w-full" />
       <label class="mt-2">Certificate:</label>
@@ -201,28 +166,11 @@ onMounted(async () => {
           label="Cancel"
           severity="secondary"
           @click="deleteDialogVisible = false"
-        ></Button>
-        <Button type="button" label="Confirm" severity="danger" @click="deleteDevice"></Button>
+        />
+        <Button type="button" label="Confirm" severity="danger" @click="deleteDevice" />
       </div>
     </div>
   </Dialog>
 </template>
 
-<style>
-.menu-danger .p-menu-item-label {
-  color: var(--p-red-500);
-}
-.menu-danger .p-menu-item-icon.pi {
-  color: var(--p-red-500);
-}
-.menu-danger .p-menu-item-content:hover {
-  .p-menu-item-label {
-    color: var(--p-red-600) !important;
-  }
-}
-.menu-danger .p-menu-item-content:hover {
-  .p-menu-item-icon.pi {
-    color: var(--p-red-600) !important;
-  }
-}
-</style>
+<style></style>
