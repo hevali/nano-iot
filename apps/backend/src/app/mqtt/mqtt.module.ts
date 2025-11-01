@@ -17,7 +17,7 @@ import { EchoController } from './echo.controller';
 import { RpcDiscoveryService, RpcService } from './rpc.service';
 import { DiscoveryModule } from '@golevelup/nestjs-discovery';
 import type { TypedConfigService } from '../lib/config';
-import { firstValueFrom, skip } from 'rxjs';
+import { firstValueFrom, skip, throttleTime } from 'rxjs';
 import * as https from 'https';
 import stoppable from 'stoppable';
 
@@ -77,7 +77,7 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
       });
     });
 
-    this.certificateService.crl$.pipe(skip(1)).subscribe((crl) => {
+    this.certificateService.crl$.pipe(skip(1), throttleTime(60)).subscribe((crl) => {
       this.logger.log('Rotating server after CRL update');
 
       this.server.on('close', () => {
