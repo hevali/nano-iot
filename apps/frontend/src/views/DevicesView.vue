@@ -23,10 +23,9 @@ const toast = useToast();
 const resolver = ref(zodResolver(CreateDeviceDtoSchema));
 
 const createDialogVisible = ref(false);
-const deleteDialogVisible = ref(false);
 
-const devices = ref<DeviceDto[]>([]);
 const deviceId = ref<string>();
+const devices = ref<DeviceDto[]>([]);
 const deviceCredentials = ref<DeviceWithCredentialsDto>();
 
 watch(createDialogVisible, (visible) => {
@@ -53,7 +52,6 @@ const onFormSubmit: FormEmitsOptions['submit'] = async ({ valid, values }) => {
 
 const deleteDevice = async () => {
   await api.delete(`/api/devices/${deviceId.value}`);
-  deleteDialogVisible.value = false;
   deviceId.value = undefined;
   devices.value = await api.get('/api/devices').then((res) => res.data);
   toast.add({ severity: 'success', summary: 'Device deleted', life: 5000 });
@@ -150,9 +148,9 @@ onMounted(async () => {
   </Dialog>
 
   <Dialog
-    v-model:visible="deleteDialogVisible"
     modal
     header="Delete device"
+    :visible="deviceId?.length > 0"
     :closable="false"
     :style="{ width: '25rem' }"
   >
@@ -161,12 +159,7 @@ onMounted(async () => {
         >Deleted devices can not be recovered. Any connection will be terminated. Are you sure?
       </span>
       <div class="flex flex-row justify-between mt-4">
-        <Button
-          type="button"
-          label="Cancel"
-          severity="secondary"
-          @click="deleteDialogVisible = false"
-        />
+        <Button type="button" label="Cancel" severity="secondary" @click="deviceId = undefined" />
         <Button type="button" label="Confirm" severity="danger" @click="deleteDevice" />
       </div>
     </div>

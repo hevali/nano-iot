@@ -25,6 +25,7 @@ const deviceMenuItems = ref<MenuItem[]>([
     command: async () => {
       if (deviceId.value) {
         emit('delete', deviceId.value);
+        deviceId.value = undefined;
       }
     },
   },
@@ -58,7 +59,7 @@ const toggleMenu = (event: PointerEvent, id: string) => {
   </DataTable>
 </template>
 
-<style scoped lang="css">
+<style lang="css">
 .menu-danger .p-menu-item-label {
   color: var(--p-red-500);
 }
