@@ -7,6 +7,7 @@ import { IncomingMessage } from 'http';
 import { promisify } from 'util';
 import { JSON_MQTT_FACTORY, MQTT_SUBSCRIBE_TOPIC_META_KEY } from './rpc.decorator';
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
+import { ConfigService } from '@nestjs/config';
 
 interface MqttRequest extends IncomingMessage {
   connDetails: {
@@ -204,7 +205,11 @@ export class MqttServerService implements OnModuleInit {
 
 @Injectable()
 export class MqttService {
-  constructor(private mqttServerService: MqttServerService) {}
+  constructor(private mqttServerService: MqttServerService, private configService: ConfigService) {}
+
+  readonly uri = `mqtts://${this.configService.getOrThrow(
+    'APP_EXTERNAL_MQTT_HOST'
+  )}:${this.configService.getOrThrow('APP_EXTERNAL_MQTT_PORT')}`;
 
   async publish(topic: string, message: string | Record<string, unknown>) {
     await this.mqttServerService.publish(topic, message);

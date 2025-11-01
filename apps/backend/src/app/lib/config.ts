@@ -11,6 +11,8 @@ export const CONFIG_SCHEMA = z.object({
   APP_TRUST_PROXY: z.coerce.boolean().default(false),
 
   APP_MQTT_PORT: z.coerce.number().int().min(1).max(65535).default(1884),
+  APP_EXTERNAL_MQTT_HOST: z.string(),
+  APP_EXTERNAL_MQTT_PORT: z.string(),
 
   APP_MQTT_SERVER_CERT: z.string().optional(),
   APP_MQTT_SERVER_CERT_PATH: z.string().optional(),

@@ -107,9 +107,12 @@ export class DeviceService {
       id: entity.id,
       createdAt: entity.createdAt,
       properties: entity.properties,
-      ca: credentials.ca,
-      certificate: credentials.certificate,
-      key: credentials.key,
+      mqtt: {
+        uri: this.mqttService.uri,
+        ca: credentials.ca,
+        certificate: credentials.certificate,
+        key: credentials.key,
+      },
     };
   }
 }

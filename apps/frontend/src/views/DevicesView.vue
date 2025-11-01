@@ -13,6 +13,7 @@ import Toast from 'primevue/toast';
 import ProgressSpinner from 'primevue/progressspinner';
 import Textarea from 'primevue/textarea';
 import { watch } from 'vue';
+import axios from 'axios';
 
 const DeviceTable = defineAsyncComponent({
   loader: () => import('../app/DeviceTable.vue'),
@@ -26,11 +27,11 @@ const createDialogVisible = ref(false);
 
 const deviceId = ref<string>();
 const devices = ref<DeviceDto[]>([]);
-const deviceCredentials = ref<DeviceWithCredentialsDto>();
+const deviceMqtt = ref<DeviceWithCredentialsDto['mqtt']>();
 
 watch(createDialogVisible, (visible) => {
   if (!visible) {
-    deviceCredentials.value = undefined;
+    deviceMqtt.value = undefined;
   }
 });
 
@@ -40,13 +41,24 @@ const onFormSubmit: FormEmitsOptions['submit'] = async ({ valid, values }) => {
       const { data } = await api.post<DeviceWithCredentialsDto>('/api/devices', {
         id: values.id,
       });
-      deviceCredentials.value = data;
+      deviceMqtt.value = data.mqtt;
 
       devices.value = await api.get('/api/devices').then((res) => res.data);
       toast.add({ severity: 'success', summary: 'Device created', life: 5000 });
-    } catch {
-      toast.add({ severity: 'error', summary: 'Device creation failed', life: 2500 });
+    } catch (e) {
+      if (axios.isAxiosError(e) && e.status === 409) {
+        toast.add({ severity: 'error', summary: 'Device already exists', life: 2500 });
+      } else {
+        toast.add({ severity: 'error', summary: 'Device creation failed', life: 2500 });
+      }
     }
+  }
+};
+
+const onCopy = (text: string) => {
+  if ('clipboard' in navigator) {
+    navigator.clipboard.writeText(text);
+    toast.add({ severity: 'success', summary: 'Copied', life: 1000 });
   }
 };
 
@@ -93,18 +105,12 @@ onMounted(async () => {
   <Dialog
     v-model:visible="createDialogVisible"
     modal
-    :header="deviceCredentials ? 'Device MQTT credentials' : 'Create device'"
+    :header="deviceMqtt ? 'Device MQTT credentials' : 'Create device'"
     :style="{
-      width: deviceCredentials ? '30rem' : '25rem',
+      width: deviceMqtt ? '30rem' : '25rem',
     }"
   >
-    <Form
-      v-if="!deviceCredentials"
-      v-slot="$form"
-      :resolver
-      class="space-y-6"
-      @submit="onFormSubmit"
-    >
+    <Form v-if="!deviceMqtt" v-slot="$form" :resolver class="space-y-6" @submit="onFormSubmit">
       <div class="flex items-center gap-4 mb-4">
         <FormField v-slot="$field" name="id" class="flex flex-col gap-1 w-full">
           <InputText
@@ -128,22 +134,65 @@ onMounted(async () => {
         <Button type="submit" label="Save" :disabled="!$form.valid" />
       </div>
     </Form>
-    <div v-else class="flex flex-col space-y-2">
+    <div v-else class="flex flex-col space-y-3">
       <div class="mb-2">
         <b>Note down these credentials they will not be shown again.</b>
       </div>
-      <label class="mt-2">CA:</label>
-      <Textarea v-model="deviceCredentials.ca" disabled rows="5" cols="30" class="w-full" />
-      <label class="mt-2">Certificate:</label>
+      <div class="flex flex-row justify-between">
+        <label for="uri" class="mt-2">URI:</label>
+        <Button
+          type="button"
+          icon="pi pi-clipboard"
+          severity="primary"
+          variant="text"
+          rounded
+          @click="(ev) => onCopy(deviceMqtt?.uri || '')"
+        />
+      </div>
+      <InputText v-model="deviceMqtt.uri" readonly name="uri" class="w-full" />
+      <div class="flex flex-row justify-between">
+        <label for="ca" class="mt-2">CA certificate:</label>
+        <Button
+          type="button"
+          icon="pi pi-clipboard"
+          severity="primary"
+          variant="text"
+          rounded
+          @click="(ev) => onCopy(deviceMqtt?.ca || '')"
+        />
+      </div>
+      <Textarea v-model="deviceMqtt.ca" readonly name="ca" rows="5" cols="30" class="w-full" />
+      <div class="flex flex-row justify-between">
+        <label for="certificate" class="mt-2">Device certificate</label>
+        <Button
+          type="button"
+          icon="pi pi-clipboard"
+          severity="primary"
+          variant="text"
+          rounded
+          @click="(ev) => onCopy(deviceMqtt?.certificate || '')"
+        />
+      </div>
       <Textarea
-        v-model="deviceCredentials.certificate"
-        disabled
+        v-model="deviceMqtt.certificate"
+        readonly
+        name="certificate"
         rows="5"
         cols="30"
         class="w-full"
       />
-      <label class="mt-2">Key:</label>
-      <Textarea v-model="deviceCredentials.key" disabled rows="5" cols="30" class="w-full" />
+      <div class="flex flex-row justify-between">
+        <label for="key" class="mt-2">Device key</label>
+        <Button
+          type="button"
+          icon="pi pi-clipboard"
+          severity="primary"
+          variant="text"
+          rounded
+          @click="(ev) => onCopy(deviceMqtt?.key || '')"
+        />
+      </div>
+      <Textarea v-model="deviceMqtt.key" readonly name="key" rows="5" cols="30" class="w-full" />
     </div>
   </Dialog>
 

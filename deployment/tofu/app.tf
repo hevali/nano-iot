@@ -87,6 +87,8 @@ APP_SESSION_SECRET="${random_password.session_secret.result}"
 APP_INITIAL_USER="user:${replace(bcrypt(random_password.user_password.result), "$", "\\$")}"
 
 APP_MQTT_PORT="1883"
+APP_EXTERNAL_MQTT_PORT="8883"
+APP_EXTERNAL_MQTT_HOST="${local.hostname}"
 APP_MQTT_SERVER_KEY_PATH="/certs/server.key"
 APP_MQTT_SERVER_CERT_PATH="/certs/server.crt"
 APP_MQTT_TLS_KEY="${tls_self_signed_cert.root.private_key_pem}"
