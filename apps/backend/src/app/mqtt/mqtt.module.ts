@@ -17,6 +17,9 @@ import { EchoController } from './echo.controller';
 import { RpcDiscoveryService, RpcService } from './rpc.service';
 import { DiscoveryModule } from '@golevelup/nestjs-discovery';
 import type { TypedConfigService } from '../lib/config';
+import { firstValueFrom, skip } from 'rxjs';
+import * as https from 'https';
+import stoppable from 'stoppable';
 
 const EXPORTS = [RpcService, CertificateService, MqttService];
 
@@ -46,7 +49,7 @@ const EXPORTS = [RpcService, CertificateService, MqttService];
 })
 export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown {
   private logger = new Logger(MqttModule.name);
-  private server!: Server;
+  private server!: Server & stoppable.WithStop;
 
   constructor(
     private broker: Aedes,
@@ -56,19 +59,9 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
 
   async onApplicationBootstrap() {
     const mqttPort = this.configService.getOrThrow<number>('APP_MQTT_PORT', 1884);
-    const trustProxy = this.configService.getOrThrow<boolean>('APP_TRUST_PROXY');
 
-    const tls = this.certificateService.getMqttTlsConfig();
-
-    this.server = createServer(this.broker, {
-      tls: {
-        ...tls,
-        requestCert: true,
-        rejectUnauthorized: true,
-        minVersion: 'TLSv1.2',
-      },
-      trustProxy,
-    });
+    const crl = await firstValueFrom(this.certificateService.crl$);
+    this.server = this.createServer(crl);
 
     await new Promise<void>((res, rej) => {
       this.server.on('error', (e) => {
@@ -83,10 +76,44 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
         res();
       });
     });
+
+    this.certificateService.crl$.pipe(skip(1)).subscribe((crl) => {
+      this.logger.log('Rotating server after CRL update');
+
+      this.server.on('close', () => {
+        this.server.removeAllListeners();
+        this.server = this.createServer(crl);
+
+        this.server.listen(mqttPort, () => {
+          this.logger.log(`Server rotation completed`);
+        });
+      });
+
+      this.server.stop();
+    });
   }
 
   async onApplicationShutdown() {
-    this.broker.close();
-    this.server.close();
+    await new Promise<void>((res, rej) =>
+      this.broker.close(() => this.server.close((err) => (err ? rej(err) : res())))
+    );
+  }
+
+  private createServer(crl: string[]) {
+    const trustProxy = this.configService.getOrThrow<boolean>('APP_TRUST_PROXY');
+    const tls = this.certificateService.getMqttTlsConfig();
+
+    const server = createServer(this.broker, {
+      tls: {
+        ...tls,
+        crl,
+        requestCert: true,
+        rejectUnauthorized: true,
+        minVersion: 'TLSv1.2',
+      },
+      trustProxy,
+    });
+
+    return stoppable(server as https.Server, 5000);
   }
 }

@@ -45,9 +45,11 @@ export class DeviceService {
   }
 
   async deleteDevice(id: string) {
+    await this.certificateService.revokeCertificate(id);
     await this.deviceRepo.delete({ id });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async setDeviceProperties(id: string, properties: Record<string, any>) {
     const device = await this.deviceRepo.findOneOrFail({ where: { id }, relations: ['methods'] });
 
@@ -57,11 +59,12 @@ export class DeviceService {
     return this.toDeviceDto({ ...device, properties });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async reportDeviceProperties(id: string, properties: Record<string, any>) {
     await this.deviceRepo.update({ id }, { properties });
   }
 
-  async reportDeviceMethods(id: string, methods: any[]) {
+  async reportDeviceMethods(id: string, methods: DeviceMethodDto[]) {
     const device = await this.deviceRepo.findOneBy({ id });
     if (device) {
       await this.deviceMethodRepo.manager.transaction(async (em) => {
@@ -92,7 +95,7 @@ export class DeviceService {
     return {
       name: entity.name,
       description: entity.description,
-      definition: entity.definition as any,
+      definition: entity.definition,
     };
   }
 
