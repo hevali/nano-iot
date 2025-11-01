@@ -22,6 +22,7 @@ export const MQTT_JSON_RPC_METHOD_META_KEY = 'mqtt.rpc.method';
 export const createParamDecorator =
   (
     type: number,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any,
     ...pipes: (Type<PipeTransform> | PipeTransform)[]
   ): ParameterDecorator =>
@@ -72,6 +73,7 @@ export function JsonMqttRawPayload(): ParameterDecorator {
 }
 
 export const JSON_MQTT_FACTORY: ParamsFactory = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   exchangeKeyForValue(type: number, data: ParamData, args: any[]) {
     if (!args) {
       return null;
@@ -114,6 +116,7 @@ export function MqttJsonRpcClientId(): ParameterDecorator {
 }
 
 export const MQTT_JSON_RPC_PARAMS_FACTORY: ParamsFactory = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   exchangeKeyForValue(type: number, data: ParamData, args: any[]) {
     if (!args) {
       return null;

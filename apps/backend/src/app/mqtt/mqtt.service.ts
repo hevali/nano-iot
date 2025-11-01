@@ -137,7 +137,7 @@ export class MqttServerService implements OnModuleInit {
     });
   }
 
-  async publish(topic: string, message: string | Record<string, any>) {
+  async publish(topic: string, message: string | Record<string, unknown>) {
     await promisify((cb) =>
       this.aedes.publish(
         {
@@ -206,7 +206,7 @@ export class MqttServerService implements OnModuleInit {
 export class MqttService {
   constructor(private mqttServerService: MqttServerService) {}
 
-  async publish(topic: string, message: string | Record<string, any>) {
+  async publish(topic: string, message: string | Record<string, unknown>) {
     await this.mqttServerService.publish(topic, message);
   }
 

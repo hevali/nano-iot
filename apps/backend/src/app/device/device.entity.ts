@@ -18,7 +18,7 @@ export class DeviceEntity {
   createdAt!: Date;
 
   @Column({ type: 'simple-json', default: '{}' })
-  properties!: Record<string, any>;
+  properties!: Record<string, unknown>;
 
   @OneToMany(() => DeviceMethodEntity, (method) => method.device, {
     onUpdate: 'CASCADE',

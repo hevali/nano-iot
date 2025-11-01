@@ -96,7 +96,7 @@ Password: <input name="password" type="password"><br>
   }
 
   @Get('user')
-  async user(@Req() req: Request) {
-    return req.session.user as any;
+  async user(@Req() req: Request): Promise<session.SessionData['user']> {
+    return req.session.user as session.SessionData['user'];
   }
 }
