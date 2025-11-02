@@ -20,6 +20,7 @@ import type { TypedConfigService } from '../lib/config';
 import { firstValueFrom, skip, throttleTime } from 'rxjs';
 import * as https from 'https';
 import stoppable from 'stoppable';
+import { EstController } from './est.controller';
 
 const EXPORTS = [RpcService, CertificateService, MqttService];
 
@@ -45,7 +46,7 @@ const EXPORTS = [RpcService, CertificateService, MqttService];
     },
   ],
   exports: [...EXPORTS],
-  controllers: [EchoController],
+  controllers: [EchoController, EstController],
 })
 export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown {
   private logger = new Logger(MqttModule.name);

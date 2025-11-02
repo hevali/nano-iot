@@ -5,9 +5,10 @@ import * as path from 'path';
 
 export const CONFIG_SCHEMA = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
 
+  APP_LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
+  APP_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  APP_EST_PORT: z.coerce.number().int().min(1).max(65535).default(8443),
   APP_TRUST_PROXY: z.coerce.boolean().default(false),
 
   APP_MQTT_PORT: z.coerce.number().int().min(1).max(65535).default(1884),

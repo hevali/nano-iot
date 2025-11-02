@@ -17,6 +17,7 @@ import { CONFIG_SCHEMA, TypedConfigService } from './lib/config';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AgentModule } from './agent/agent.module';
 import { AuthMiddleware, AuthModule } from './auth';
+import { ShutdownObserver } from './lib';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { AuthMiddleware, AuthModule } from './auth';
       provide: APP_INTERCEPTOR,
       useClass: ZodSerializerInterceptor,
     },
+    ShutdownObserver,
   ],
 })
 export class AppModule implements NestModule {
@@ -83,7 +85,8 @@ export class AppModule implements NestModule {
       .exclude(
         { path: '/auth/login', method: RequestMethod.GET },
         { path: '/auth/login', method: RequestMethod.POST },
-        { path: '/auth/logout', method: RequestMethod.GET }
+        { path: '/auth/logout', method: RequestMethod.GET },
+        { path: '/.well-known/*', method: RequestMethod.ALL }
       )
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
