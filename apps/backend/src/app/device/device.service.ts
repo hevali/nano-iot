@@ -12,6 +12,7 @@ import {
 import { MqttService } from '../mqtt/mqtt.service';
 import { RpcService } from '../mqtt/rpc.service';
 import { RpcParams } from 'jsonrpc-lite';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class DeviceService {
@@ -47,6 +48,14 @@ export class DeviceService {
   async deleteDevice(id: string) {
     await this.certificateService.revokeCertificate(id);
     await this.deviceRepo.delete({ id });
+  }
+
+  async getDeviceEstAuth(id: string) {
+    const device = await this.deviceRepo.findOneOrFail({ where: { id }, relations: ['methods'] });
+    return crypto
+      .createHmac('sha1', 'key')
+      .update(`${device.id}:${device.createdAt.getTime()}`)
+      .digest('hex');
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -58,6 +58,12 @@ export class DeviceController {
     return device.properties;
   }
 
+  @Get(':id/est-auth')
+  async getDeviceEstAuth(@Param('id') id: string) {
+    const password = await this.deviceService.getDeviceEstAuth(id);
+    return { username: id, password };
+  }
+
   @JsonMqttSubscribe('iot/devices/+/properties/reported')
   async onDeviceProperties(
     @JsonMqttTopic() topic: string,

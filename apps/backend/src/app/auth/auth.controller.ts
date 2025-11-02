@@ -5,6 +5,7 @@ import { promisify } from 'util';
 import type { TypedConfigService } from '../lib/config';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { ApiExcludeController } from '@nestjs/swagger';
 
 interface SessionEnd extends session.Session {
@@ -41,7 +42,8 @@ Password: <input name="password" type="password"><br>
   async doLogin(@Req() req: Request, @Res() res: Response) {
     const [user, hash] = this.configService.getOrThrow<string>('APP_INITIAL_USER').split(':');
     const match = await bcrypt.compare(req.body.password, hash);
-    if (!match || user !== req.body.username) {
+
+    if (!match || !crypto.timingSafeEqual(Buffer.from(user), Buffer.from(req.body.username))) {
       if (req.accepts('html')) {
         res.redirect(302, '/auth/login?error=1');
         return;
