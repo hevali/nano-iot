@@ -91,10 +91,12 @@ resource "ssh_resource" "dotenv_file" {
 
   file {
     content     = <<EOT
-PORT="3000"
 NODE_ENV="production"
 
 APP_HTTP_URL="https://${local.hostname}"
+APP_PORT="3000"
+APP_EST_PORT="3001"
+
 APP_BASE_PATH="/api"
 APP_TRUST_PROXY="true"
 APP_DATA_DIR="/data"

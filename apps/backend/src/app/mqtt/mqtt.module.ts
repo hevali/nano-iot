@@ -17,6 +17,7 @@ import stoppable from 'stoppable';
 import type { TypedConfigService } from '../lib/config';
 import { CertificateService } from './certificate.service';
 import { EchoController } from './echo.controller';
+import { EstController } from './est.controller';
 import { MqttServerService, MqttService } from './mqtt.service';
 import { RpcDiscoveryService, RpcService } from './rpc.service';
 
@@ -44,7 +45,7 @@ const EXPORTS = [RpcService, CertificateService, MqttService];
     },
   ],
   exports: [...EXPORTS],
-  controllers: [EchoController],
+  controllers: [EchoController, EstController],
 })
 export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown {
   private logger = new Logger(MqttModule.name);

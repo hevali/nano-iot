@@ -17,6 +17,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { AgentModule } from './agent/agent.module';
 import { AuthMiddleware, AuthModule } from './auth';
 import { DeviceModule } from './device/device.module';
+import { ShutdownObserver } from './lib';
 import { CONFIG_SCHEMA, TypedConfigService } from './lib/config';
 import { AnyExceptionFilter, TypeormErrorFilter, ZodErrorFilter } from './lib/filters';
 import { BasicAuthGuard } from './lib/guards';
@@ -109,6 +110,7 @@ import { MqttModule } from './mqtt/mqtt.module';
       useClass: ZodSerializerInterceptor,
     },
     BasicAuthGuard,
+    ShutdownObserver,
   ],
   controllers: [McpController],
 })
@@ -122,6 +124,7 @@ export class AppModule implements NestModule {
         { path: '/auth/logout', method: RequestMethod.GET },
         { path: '/mcp', method: RequestMethod.ALL },
         { path: '/a2a/*path', method: RequestMethod.ALL },
+        { path: '/.well-known/*', method: RequestMethod.ALL },
       )
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
