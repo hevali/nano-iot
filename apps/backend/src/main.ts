@@ -5,7 +5,7 @@
 
 import { ConsoleLogger, LOG_LEVELS, Logger, LogLevel } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app/app.module';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -15,17 +15,36 @@ import { TypedConfigService } from './app/lib/config';
 import session from 'express-session';
 import type { FileStore } from 'session-file-store';
 import * as path from 'path';
+import * as http from 'http';
+import express from 'express';
+import { ShutdownObserver } from './app/lib';
 
 const FileStore: FileStore = require('session-file-store')(session);
 
 const DOCS_PATH = 'docs';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const server = express();
+  const app = await NestFactory.create<NestExpressApplication>(
+    AppModule,
+    new ExpressAdapter(server)
+  );
+  app.enableShutdownHooks();
 
   const configService = app.get<TypedConfigService>(ConfigService);
+  const port = configService.getOrThrow<number>('APP_PORT');
+  const estPort = configService.getOrThrow<number>('APP_EST_PORT');
 
-  const logLevel = configService.getOrThrow<LogLevel>('LOG_LEVEL');
+  server.use((req: Request, res: Response, next: NextFunction) => {
+    req.headers['x-forwarded-host'] ??= req.headers.host;
+    if (req.socket.localPort === estPort) {
+      req.headers.host = 'est';
+    }
+
+    next();
+  });
+
+  const logLevel = configService.getOrThrow<LogLevel>('APP_LOG_LEVEL');
   const logger = new ConsoleLogger({ logLevels: LOG_LEVELS.slice(LOG_LEVELS.indexOf(logLevel)) });
   app.useLogger(logger);
 
@@ -56,30 +75,47 @@ async function bootstrap() {
 
   const sessionStorePath = path.join(configService.getOrThrow<string>('APP_DATA_DIR'), 'sessions');
   const sessionSecret = configService.getOrThrow<string>('APP_SESSION_SECRET');
-  app.use(
-    session({
-      store: new FileStore({
-        path: sessionStorePath,
-        reapAsync: true,
-        logFn: () => {
-          // empty
-        },
-      }),
-      secret: sessionSecret,
-      cookie: {
-        secure: 'auto',
-        httpOnly: true,
-        sameSite: 'strict',
+  const sessionMiddleware = session({
+    store: new FileStore({
+      path: sessionStorePath,
+      reapAsync: true,
+      logFn: () => {
+        // empty
       },
-      resave: false,
-      saveUninitialized: false,
-    })
-  );
+    }),
+    secret: sessionSecret,
+    cookie: {
+      secure: 'auto',
+      httpOnly: true,
+      sameSite: 'strict',
+    },
+    resave: false,
+    saveUninitialized: false,
+  });
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.socket.localPort !== estPort) {
+      sessionMiddleware(req, res, next);
+    } else {
+      next();
+    }
+  });
 
-  const port = configService.getOrThrow<number>('PORT');
-  await app.listen(port);
+  await app.init();
 
-  Logger.log(`🚀 Application is running on: http://localhost:${port}`);
+  const shutdownObserver = app.get(ShutdownObserver);
+
+  const httpServer = await new Promise<http.Server>((res) => {
+    const s = http.createServer(server).listen(port, () => res(s));
+  });
+  const estServer = await new Promise<http.Server>((res) => {
+    const s = http.createServer(server).listen(estPort, () => res(s));
+  });
+
+  shutdownObserver.addHttpServer(httpServer);
+  shutdownObserver.addHttpServer(estServer);
+
+  Logger.log(`API server is running on: http://localhost:${port}`);
+  Logger.log(`EST server is running on: http://localhost:${estPort}`);
 }
 
 bootstrap();

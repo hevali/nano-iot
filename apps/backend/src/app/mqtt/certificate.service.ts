@@ -12,7 +12,6 @@ import * as path from 'path';
 import * as cp from 'child_process';
 import * as os from 'os';
 import type { TypedConfigService } from '../lib/config';
-import { TlsOptions } from 'tls';
 import { promisify } from 'util';
 import { BehaviorSubject } from 'rxjs';
 import { randomUUID } from 'crypto';
@@ -127,12 +126,53 @@ export class CertificateService implements OnModuleInit {
     this.logger.log('CA setup completed');
   }
 
-  getMqttTlsConfig(): TlsOptions {
+  getMqttTlsConfig() {
     return {
-      ca: [this.mqttCert],
+      ca: this.mqttCert,
       cert: this.serverCert,
       key: this.serverKey,
     };
+  }
+
+  async signEstCsr(csr: string, validDays = 365) {
+    const tmpCsrPath = path.join(os.tmpdir(), `${randomUUID()}.csr`);
+    const tmpCertPath = path.join(os.tmpdir(), `${randomUUID()}.p7b`);
+    await fs.outputFile(tmpCsrPath, csr, 'utf-8');
+
+    const serial = await asyncLock.acquire('sign', async () => {
+      await execFile('openssl', [
+        'ca',
+        '-config',
+        this.configPath,
+        '-extensions',
+        'v3_req',
+        '-days',
+        validDays.toString(),
+        '-notext',
+        '-md',
+        'sha256',
+        '-batch',
+        '-in',
+        tmpCsrPath,
+      ]);
+
+      const { stdout } = await execFile('tail', ['-n', '1', this.databasePath]);
+
+      return stdout.split('\t')[3];
+    });
+
+    const deviceCertPath = path.join(this.caPath, 'certs', `${serial}.pem`);
+    await execFile('openssl', [
+      'crl2pkcs7',
+      '-nocrl',
+      '-certfile',
+      deviceCertPath,
+      '-out',
+      tmpCertPath,
+    ]);
+
+    const certificate = await fs.readFile(tmpCertPath, 'utf-8');
+    return certificate;
   }
 
   async createCertificate(clientId: string, validDays = 365): Promise<Credentials> {
