@@ -11,6 +11,7 @@ import {
 } from '@nano-iot/common';
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as crypto from 'crypto';
 import { RpcParams } from 'jsonrpc-lite';
 import { Repository } from 'typeorm';
 import { z } from 'zod';
@@ -124,6 +125,14 @@ export class DeviceService {
 
   async reportDeviceProperties(id: string, properties: DevicePropertiesDto) {
     await this.deviceRepo.update({ id }, { properties });
+  }
+
+  async getDeviceEstAuth(id: string) {
+    const device = await this.deviceRepo.findOneOrFail({ where: { id }, relations: ['methods'] });
+    return crypto
+      .createHmac('sha1', 'key')
+      .update(`${device.id}:${device.createdAt.getTime()}`)
+      .digest('hex');
   }
 
   @McpTool({

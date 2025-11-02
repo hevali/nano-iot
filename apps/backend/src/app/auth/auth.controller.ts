@@ -2,6 +2,7 @@ import { Controller, Get, Inject, Post, Req, Res, UnauthorizedException } from '
 import { ConfigService } from '@nestjs/config';
 import { ApiExcludeController } from '@nestjs/swagger';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import type { Request, Response } from 'express';
 import session from 'express-session';
 import { promisify } from 'util';
@@ -43,7 +44,8 @@ Password: <input name="password" type="password"><br>
   async doLogin(@Req() req: Request, @Res() res: Response) {
     const [user, hash] = this.configService.getOrThrow<string>('APP_INITIAL_USER').split(':');
     const match = await bcrypt.compare(req.body.password, hash);
-    if (!match || user !== req.body.username) {
+
+    if (!match || !crypto.timingSafeEqual(Buffer.from(user), Buffer.from(req.body.username))) {
       if (req.accepts('html')) {
         res.redirect(302, '/auth/login?error=1');
         return;
