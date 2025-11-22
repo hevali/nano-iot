@@ -5,14 +5,30 @@ import { createApp } from 'vue';
 import App from './app/App.vue';
 import Ripple from 'primevue/ripple';
 import ToastService from 'primevue/toastservice';
-import Aura from '@primeuix/themes/aura';
+import Lara from '@primeuix/themes/lara';
+import { definePreset } from '@primeuix/themes';
 
 const app = createApp(App);
 app.use(router);
 
+const MyPreset = definePreset(Lara, {
+  components: {
+    card: {
+      root: {},
+      colorScheme: {
+        light: {
+          root: {
+            background: '{surface.100}',
+          },
+        },
+      },
+    },
+  },
+});
+
 app.use(PrimeVue, {
   theme: {
-    preset: Aura,
+    preset: MyPreset,
   },
   ripple: true,
 });

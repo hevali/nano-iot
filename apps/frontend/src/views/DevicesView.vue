@@ -12,6 +12,7 @@ import Message from 'primevue/message';
 import Toast from 'primevue/toast';
 import ProgressSpinner from 'primevue/progressspinner';
 import Textarea from 'primevue/textarea';
+import Card from 'primevue/card';
 import { watch } from 'vue';
 import axios from 'axios';
 
@@ -75,32 +76,30 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex flex-row m-2 card">
-    <div class="min-w-0 flex-3">
-      <h2 class="text-2xl/7 font-bold text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-        Devices
-      </h2>
-      <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
-        <div class="mt-2 flex items-center text-sm text-gray-500">
-          <span class="pi pi-hashtag me-2" />
-          {{ devices.length }}
+  <Toast />
+
+  <Card class="m-2">
+    <template #title>Devices</template>
+    <template #content>
+      <div class="flex flex-row justify-between">
+        <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+          <div class="mt-2 flex items-center text-sm text-gray-500">
+            <span class="pi pi-hashtag me-2" />
+            {{ devices.length }}
+          </div>
+          <div class="mt-2 flex items-center text-sm text-gray-500">
+            <span class="pi pi-check-circle me-2" />
+            {{ devices.filter((d) => d.properties['online'] === true).length }}
+          </div>
         </div>
-        <div class="mt-2 flex items-center text-sm text-gray-500">
-          <span class="pi pi-check-circle me-2" />
-          {{ devices.filter((d) => d.properties['online'] === true).length }}
+        <div class="self-end">
+          <Button label="Create device" icon="pi pi-plus" @click="createDialogVisible = true" />
         </div>
       </div>
-    </div>
-    <div class="min-w-0 flex-1">
-      <Button label="Create device" icon="pi pi-plus" @click="createDialogVisible = true" />
-    </div>
-  </div>
+    </template>
+  </Card>
 
-  <div class="card">
-    <DeviceTable :devices="devices" @delete="(id) => (deviceId = id)" />
-  </div>
-
-  <Toast />
+  <DeviceTable class="mt-4" :devices="devices" @delete="(id) => (deviceId = id)" />
 
   <Dialog
     v-model:visible="createDialogVisible"
