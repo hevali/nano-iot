@@ -187,7 +187,7 @@ resource "ssh_resource" "certbot_authenticator_hook" {
   }
 
   commands = [
-    "sudo chmod +x ~/certbot/authenticator.sh"
+    "chmod +x ~/certbot/authenticator.sh"
   ]
 }
 
@@ -210,7 +210,7 @@ resource "ssh_resource" "certbot_cleanup_hook" {
   }
 
   commands = [
-    "sudo chmod +x ~/certbot/cleanup.sh"
+    "chmod +x ~/certbot/cleanup.sh"
   ]
 }
 
@@ -249,8 +249,8 @@ resource "ssh_resource" "certbot_deploy_hook" {
   }
 
   commands = [
-    "sudo mv -f ~/certbot-deploy.sh /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh",
-    "sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh"
+    "mv -f ~/certbot-deploy.sh /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh",
+    "chmod +x /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh"
   ]
 
   depends_on = [ssh_resource.acquire_certificate]

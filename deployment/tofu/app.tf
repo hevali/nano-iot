@@ -31,22 +31,6 @@ resource "random_password" "session_secret" {
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
-resource "ssh_resource" "docker_compose_file" {
-  when = "create"
-
-  host                               = hcloud_server.server.ipv4_address
-  user                               = local.server_user
-  private_key                        = local.server_ssh_key
-  ignore_no_supported_methods_remain = true
-
-  file {
-    content     = templatefile("${path.module}/templates/docker-compose.yml.tftpl", { hostname : local.hostname })
-    destination = "~/docker-compose.yml"
-  }
-
-  depends_on = [ssh_resource.acquire_certificate]
-}
-
 resource "ssh_resource" "nginx_config_file" {
   when = "create"
 
@@ -61,8 +45,38 @@ resource "ssh_resource" "nginx_config_file" {
     content     = templatefile("${path.module}/templates/nginx.conf.tftpl", { hostname : local.hostname })
     destination = "~/nginx/nginx.conf"
   }
+}
 
-  depends_on = [ssh_resource.acquire_certificate]
+resource "ssh_resource" "nginx_options_ssl_file" {
+  when = "create"
+
+  host                               = hcloud_server.server.ipv4_address
+  user                               = local.server_user
+  private_key                        = local.server_ssh_key
+  ignore_no_supported_methods_remain = true
+
+  pre_commands = ["mkdir -p ~/nginx"]
+
+  file {
+    content     = file("${path.module}/assets/options-ssl-nginx.conf")
+    destination = "~/nginx/options-ssl-nginx.conf"
+  }
+}
+
+resource "ssh_resource" "nginx_ssl_dhparams_file" {
+  when = "create"
+
+  host                               = hcloud_server.server.ipv4_address
+  user                               = local.server_user
+  private_key                        = local.server_ssh_key
+  ignore_no_supported_methods_remain = true
+
+  pre_commands = ["mkdir -p ~/nginx"]
+
+  file {
+    content     = file("${path.module}/assets/ssl-dhparams.pem")
+    destination = "~/nginx/ssl-dhparams.pem"
+  }
 }
 
 resource "ssh_resource" "dotenv_file" {
@@ -100,6 +114,20 @@ EOT
   }
 }
 
+resource "ssh_resource" "docker_compose_file" {
+  when = "create"
+
+  host                               = hcloud_server.server.ipv4_address
+  user                               = local.server_user
+  private_key                        = local.server_ssh_key
+  ignore_no_supported_methods_remain = true
+
+  file {
+    content     = templatefile("${path.module}/templates/docker-compose.yml.tftpl", { hostname : local.hostname })
+    destination = "~/docker-compose.yml"
+  }
+}
+
 resource "ssh_resource" "docker_compose_down" {
   triggers = {
     always_run = "${timestamp()}"
@@ -116,7 +144,7 @@ resource "ssh_resource" "docker_compose_down" {
     "docker compose -f ~/docker-compose.yml down"
   ]
 
-  depends_on = [ssh_resource.docker_compose_file, ssh_resource.dotenv_file]
+  depends_on = [ssh_resource.docker_compose_file]
 }
 
 resource "ssh_resource" "docker_compose_up" {
@@ -136,5 +164,13 @@ resource "ssh_resource" "docker_compose_up" {
     "docker compose -f ~/docker-compose.yml up -d"
   ]
 
-  depends_on = [ssh_resource.docker_compose_file, ssh_resource.dotenv_file, ssh_resource.docker_compose_down]
+  depends_on = [
+    ssh_resource.docker_compose_file,
+    ssh_resource.docker_compose_down,
+    ssh_resource.acquire_certificate,
+    ssh_resource.dotenv_file,
+    ssh_resource.nginx_config_file,
+    ssh_resource.nginx_options_ssl_file,
+    ssh_resource.nginx_ssl_dhparams_file
+  ]
 }
