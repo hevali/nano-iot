@@ -54,8 +54,7 @@
       "plugin": "@nx/jest/plugin",
       "options": {
         "targetName": "test"
-      },
-      "exclude": ["apps/nano-iot-e2e/**/*"]
+      }
     },
     {
       "plugin": "@nx/docker",
