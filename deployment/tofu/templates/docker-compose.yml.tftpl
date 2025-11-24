@@ -34,3 +34,5 @@ services:
     image: ghcr.io/hevali/docs
     restart: always
     pull_policy: always
+    env:
+      - APP_HOST: ${hostname}
