@@ -3,5 +3,5 @@ data "hcloud_zone" "main" {
 }
 
 data "tls_public_key" "key" {
-  private_key_openssh = file(var.ssh_key_path)
+  private_key_openssh = local.server_ssh_key
 }

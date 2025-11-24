@@ -36,7 +36,7 @@ resource "ssh_resource" "docker_compose_file" {
 
   host                               = hcloud_server.server.ipv4_address
   user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
+  private_key                        = local.server_ssh_key
   ignore_no_supported_methods_remain = true
 
   file {
@@ -52,7 +52,7 @@ resource "ssh_resource" "nginx_config_file" {
 
   host                               = hcloud_server.server.ipv4_address
   user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
+  private_key                        = local.server_ssh_key
   ignore_no_supported_methods_remain = true
 
   pre_commands = ["mkdir -p ~/nginx"]
@@ -70,7 +70,7 @@ resource "ssh_resource" "dotenv_file" {
 
   host                               = hcloud_server.server.ipv4_address
   user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
+  private_key                        = local.server_ssh_key
   ignore_no_supported_methods_remain = true
 
   pre_commands = ["mkdir -p ~/backend"]
@@ -109,7 +109,7 @@ resource "ssh_resource" "docker_compose_down" {
 
   host                               = hcloud_server.server.ipv4_address
   user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
+  private_key                        = local.server_ssh_key
   ignore_no_supported_methods_remain = true
 
   commands = [
@@ -128,7 +128,7 @@ resource "ssh_resource" "docker_compose_up" {
 
   host                               = hcloud_server.server.ipv4_address
   user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
+  private_key                        = local.server_ssh_key
   ignore_no_supported_methods_remain = true
 
   commands = [

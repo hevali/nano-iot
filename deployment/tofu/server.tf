@@ -1,6 +1,7 @@
 locals {
-  server_user = "webadmin"
-  hostname    = length(hcloud_zone_rrset.app) == 1 ? "${hcloud_zone_rrset.app[0].name}.${data.hcloud_zone.main.name}" : data.hcloud_zone.main.name
+  server_ssh_key = file(var.ssh_key_path)
+  server_user    = "webadmin"
+  hostname       = length(hcloud_zone_rrset.app) == 1 ? "${hcloud_zone_rrset.app[0].name}.${data.hcloud_zone.main.name}" : data.hcloud_zone.main.name
 }
 
 resource "hcloud_ssh_key" "key" {
@@ -172,7 +173,7 @@ resource "ssh_resource" "certbot_authenticator_hook" {
 
   host                               = hcloud_server.server.ipv4_address
   user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
+  private_key                        = local.server_ssh_key
   ignore_no_supported_methods_remain = true
 
   pre_commands = ["mkdir -p ~/certbot"]
@@ -195,7 +196,7 @@ resource "ssh_resource" "certbot_cleanup_hook" {
 
   host                               = hcloud_server.server.ipv4_address
   user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
+  private_key                        = local.server_ssh_key
   ignore_no_supported_methods_remain = true
 
   pre_commands = ["mkdir -p ~/certbot"]
@@ -218,7 +219,7 @@ resource "ssh_resource" "acquire_certificate" {
 
   host                               = hcloud_server.server.ipv4_address
   user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
+  private_key                        = local.server_ssh_key
   ignore_no_supported_methods_remain = true
 
   file {
@@ -239,7 +240,7 @@ resource "ssh_resource" "certbot_deploy_hook" {
 
   host                               = hcloud_server.server.ipv4_address
   user                               = local.server_user
-  private_key                        = file(var.ssh_key_path)
+  private_key                        = local.server_ssh_key
   ignore_no_supported_methods_remain = true
 
   file {
