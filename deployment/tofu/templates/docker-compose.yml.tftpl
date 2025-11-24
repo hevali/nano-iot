@@ -16,6 +16,7 @@ services:
     depends_on:
       - backend
       - frontend
+      - docs
   backend:
     image: ghcr.io/hevali/backend
     restart: always
@@ -27,5 +28,9 @@ services:
       - /etc/letsencrypt/live/${hostname}/privkey.pem:/certs/server.key:ro
   frontend:
     image: ghcr.io/hevali/frontend
+    restart: always
+    pull_policy: always
+  docs:
+    image: ghcr.io/hevali/docs
     restart: always
     pull_policy: always
