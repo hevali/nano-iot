@@ -16,12 +16,13 @@ const items = ref<MenuItem[]>([
     route: '/devices',
   },
   {
-    label: 'About',
+    label: 'Docs',
     icon: 'pi pi-info-circle',
-    route: '/about',
+    url: '/docs',
+    target: '_blank',
   },
   {
-    label: 'API Docs',
+    label: 'API',
     icon: 'pi pi-code',
     url: '/api/docs',
     target: '_blank',
