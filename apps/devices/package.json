@@ -97,9 +97,5 @@
         }
       }
     }
-  },
-  "dependencies": {
-    "jsonrpc-lite": "^2.2.0",
-    "mqtt": "^5.14.1"
   }
 }

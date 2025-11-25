@@ -1,4 +1,3 @@
-import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { Ajv } from 'ajv';
 
@@ -42,18 +41,14 @@ export const DeviceMethodSchema = z.object({
   }),
 });
 
-export class DeviceMethodDto extends createZodDto(DeviceMethodSchema) {}
-
-const DeviceDtoSchema = z.object({
+export const DeviceDtoSchema = z.object({
   id: z.string(),
   createdAt: zDate(),
   properties: DevicePropertiesSchema,
   methods: DeviceMethodSchema.array(),
 });
 
-export class DeviceDto extends createZodDto(DeviceDtoSchema) {}
-
-const DeviceWithCredentialsDtoSchema = z.object({
+export const DeviceWithCredentialsDtoSchema = z.object({
   id: z.string(),
   createdAt: zDate(),
   properties: DevicePropertiesSchema,
@@ -65,8 +60,6 @@ const DeviceWithCredentialsDtoSchema = z.object({
   }),
 });
 
-export class DeviceWithCredentialsDto extends createZodDto(DeviceWithCredentialsDtoSchema) {}
-
 export const CreateDeviceDtoSchema = z.object({
   id: z
     .string()
@@ -76,4 +69,5 @@ export const CreateDeviceDtoSchema = z.object({
   properties: DevicePropertiesSchema.optional(),
 });
 
-export class CreateDeviceDto extends createZodDto(CreateDeviceDtoSchema) {}
+export type DeviceDto = z.infer<typeof DeviceDtoSchema>;
+export type DeviceWithCredentialsDto = z.infer<typeof DeviceWithCredentialsDtoSchema>;

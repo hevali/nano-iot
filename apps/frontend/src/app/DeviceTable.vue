@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DeviceDto } from '@nano-iot/common';
+import { type DeviceDto } from '@nano-iot/common';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';

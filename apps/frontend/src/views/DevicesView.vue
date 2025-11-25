@@ -2,7 +2,11 @@
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
-import { CreateDeviceDtoSchema, DeviceWithCredentialsDto, type DeviceDto } from '@nano-iot/common';
+import {
+  CreateDeviceDtoSchema,
+  type DeviceWithCredentialsDto,
+  type DeviceDto,
+} from '@nano-iot/common';
 import { ref, onMounted, defineAsyncComponent } from 'vue';
 import { api } from '../services/api';
 import { useToast } from 'primevue/usetoast';
