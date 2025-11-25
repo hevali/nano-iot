@@ -223,7 +223,7 @@ resource "ssh_resource" "acquire_certificate" {
   ignore_no_supported_methods_remain = true
 
   file {
-    content     = "0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q"
+    content     = "0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && docker compose -f ~/docker-compose.yml down && sudo certbot renew -q"
     destination = "~/certbot-renew"
   }
 
@@ -244,12 +244,12 @@ resource "ssh_resource" "certbot_deploy_hook" {
   ignore_no_supported_methods_remain = true
 
   file {
-    content     = "docker compose -f ~/docker-compose.yml exec nginx nginx -s reload"
+    content     = "docker compose -f ~/docker-compose.yml up -d"
     destination = "~/certbot-deploy.sh"
   }
 
   commands = [
-    "mv -f ~/certbot-deploy.sh /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh",
+    "sudo mv -f ~/certbot-deploy.sh /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh",
     "chmod +x /etc/letsencrypt/renewal-hooks/deploy/nginx-restart.sh"
   ]
 
