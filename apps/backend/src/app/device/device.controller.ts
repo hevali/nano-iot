@@ -1,16 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
 import { DeviceService } from './device.service';
 import { ApiBody, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
-import {
-  CreateDeviceDto,
-  DeviceDto,
-  DeviceMethodDto,
-  DeviceMethodSchema,
-  DevicePropertiesSchema,
-  DeviceWithCredentialsDto,
-} from '@nano-iot/common';
+import { DeviceMethodSchema, DevicePropertiesSchema } from '@nano-iot/common';
 import { ZodResponse, ZodValidationPipe } from 'nestjs-zod';
 import { JsonMqttPayload, JsonMqttSubscribe, JsonMqttTopic } from '../mqtt/rpc.decorator';
+import { CreateDeviceDto, DeviceDto, DeviceMethodDto, DeviceWithCredentialsDto } from '../models';
 
 @Controller('devices')
 @ApiTags('Devices')

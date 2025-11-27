@@ -12,10 +12,10 @@ export interface IoTDeviceOptions {
     string,
     {
       definition: Omit<DeviceMethodDto, 'name'>;
-      handler: (...args: any[]) => Promise<any>;
+      handler: (...args: unknown[]) => Promise<unknown>;
     }
   >;
-  properties: Record<string, any>;
+  properties: Record<string, unknown>;
 }
 
 export abstract class IoTDevice {

@@ -70,4 +70,6 @@ export const CreateDeviceDtoSchema = z.object({
 });
 
 export type DeviceDto = z.infer<typeof DeviceDtoSchema>;
+export type DeviceMethodDto = z.infer<typeof DeviceMethodSchema>;
 export type DeviceWithCredentialsDto = z.infer<typeof DeviceWithCredentialsDtoSchema>;
+export type CreateDeviceDto = z.infer<typeof CreateDeviceDtoSchema>;
