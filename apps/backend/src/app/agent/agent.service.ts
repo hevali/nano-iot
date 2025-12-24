@@ -2,13 +2,14 @@ import { DeviceService } from '../device/device.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatEntity, ChatMessageEntity } from './chat.entity';
 import { Repository } from 'typeorm';
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Logger, OnModuleInit, Injectable } from '@nestjs/common';
 import { createAgent, createMiddleware, ReactAgent, tool } from 'langchain';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { BaseMessage, ChatMessage, HumanMessage } from '@langchain/core/messages';
 
+@Injectable()
 export class AgentService implements OnModuleInit {
   private logger = new Logger(AgentService.name);
   private agent!: ReactAgent;
@@ -57,7 +58,7 @@ export class AgentService implements OnModuleInit {
         description:
           'Dedicated agent to handle interaction with a specific device. Delegate device actions to this agent. Whenever you need information or take action on a specific device, call this agent.',
         schema: z.object({
-          deviceId: z.string('ID of the device.'),
+          deviceId: z.string({ message: 'ID of the device.' }),
           task: z
             .string()
             .describe('Describe step by step what the agent should do with the device.'),
@@ -84,7 +85,7 @@ export class AgentService implements OnModuleInit {
         description:
           'Use this Agent to look up information that you do not know but might be able to find through web search.',
         schema: z.object({
-          query: z.string('The web query you want to perform.'),
+          query: z.string({ message: 'The web query you want to perform.' }),
         }),
       }
     );

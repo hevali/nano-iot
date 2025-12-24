@@ -4,14 +4,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DeviceEntity, DeviceMethodEntity } from './device.entity';
 import { Repository } from 'typeorm';
 import {
-  CreateDeviceDto,
+  type CreateDeviceDto,
+  CreateDeviceDtoSchema,
   DeviceDto,
   DeviceMethodDto,
   DeviceWithCredentialsDto,
+  DeviceWithCredentialsDtoSchema,
 } from '@nano-iot/common';
 import { MqttService } from '../mqtt/mqtt.service';
 import { RpcService } from '../mqtt/rpc.service';
 import { RpcParams } from 'jsonrpc-lite';
+import { Tool } from '@rekog/mcp-nest';
+import { z } from 'zod';
 
 @Injectable()
 export class DeviceService {
@@ -33,6 +37,12 @@ export class DeviceService {
     return this.toDeviceDto(device);
   }
 
+  @Tool({
+    name: 'create-device',
+    description: 'Creates a new device with the given ID',
+    parameters: CreateDeviceDtoSchema,
+    outputSchema: DeviceWithCredentialsDtoSchema,
+  })
   async createDevice(dto: CreateDeviceDto) {
     const existing = await this.deviceRepo.findOneBy({ id: dto.id });
     if (existing) {
@@ -44,9 +54,19 @@ export class DeviceService {
     return this.toDeviceWithCredentialsDto(device, credentials);
   }
 
-  async deleteDevice(id: string) {
-    await this.certificateService.revokeCertificate(id);
-    await this.deviceRepo.delete({ id });
+  @Tool({
+    name: 'delete-device',
+    description: 'Deletes a device with the given ID',
+    parameters: z.object({ id: z.string({ description: 'The ID of the device to delete' }) }),
+    annotations: {
+      destructiveHint: true,
+    },
+  })
+  async deleteDevice(id: string | { id: string }) {
+    const deviceId = typeof id === 'string' ? id : id.id;
+    await this.certificateService.revokeCertificate(deviceId);
+    await this.deviceRepo.delete({ id: deviceId });
+    return {};
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

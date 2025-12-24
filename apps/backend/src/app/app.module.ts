@@ -17,6 +17,8 @@ import { CONFIG_SCHEMA, TypedConfigService } from './lib/config';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AgentModule } from './agent/agent.module';
 import { AuthMiddleware, AuthModule } from './auth';
+import { McpModule, McpTransportType } from '@rekog/mcp-nest';
+import { BasicAuthGuard } from './lib/guards';
 
 @Module({
   imports: [
@@ -48,6 +50,13 @@ import { AuthMiddleware, AuthModule } from './auth';
       },
       inject: [ConfigService],
     }),
+    McpModule.forRoot({
+      name: 'nano-iot-mcp-server',
+      version: '0.0.1',
+      instructions: 'Nano IoT MCP Server',
+      transport: [McpTransportType.STREAMABLE_HTTP],
+      guards: [BasicAuthGuard],
+    }),
     AuthModule,
     MqttModule,
     DeviceModule,
@@ -74,6 +83,7 @@ import { AuthMiddleware, AuthModule } from './auth';
       provide: APP_INTERCEPTOR,
       useClass: ZodSerializerInterceptor,
     },
+    BasicAuthGuard,
   ],
 })
 export class AppModule implements NestModule {
@@ -83,7 +93,8 @@ export class AppModule implements NestModule {
       .exclude(
         { path: '/auth/login', method: RequestMethod.GET },
         { path: '/auth/login', method: RequestMethod.POST },
-        { path: '/auth/logout', method: RequestMethod.GET }
+        { path: '/auth/logout', method: RequestMethod.GET },
+        { path: '/mcp', method: RequestMethod.ALL }
       )
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
