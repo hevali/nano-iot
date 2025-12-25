@@ -4,7 +4,7 @@ import { ApiBody, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import {
   CreateDeviceDtoSchema,
   DeviceMethodSchema,
-  DevicePropertiesSchema,
+  DevicePropertiesDtoSchema,
   DeviceWithCredentialsDtoSchema,
 } from '@nano-iot/common';
 import { ZodResponse, ZodValidationPipe } from 'nestjs-zod';
@@ -54,14 +54,14 @@ export class DeviceController {
     @Param('id') id: string,
     @Body() properties: Record<string, unknown>
   ) {
-    const device = await this.deviceService.setDeviceProperties(id, properties);
+    const device = await this.deviceService.setDeviceProperties({ deviceId: id, properties });
     return device.properties;
   }
 
   @JsonMqttSubscribe('iot/devices/+/properties/reported')
   async onDeviceProperties(
     @JsonMqttTopic() topic: string,
-    @JsonMqttPayload(new ZodValidationPipe(DevicePropertiesSchema))
+    @JsonMqttPayload(new ZodValidationPipe(DevicePropertiesDtoSchema))
     properties: Record<string, unknown>
   ) {
     const id = topic.split('/')[2];

@@ -35,7 +35,8 @@ export class AgentService implements OnModuleInit {
           model: this.model,
           tools: device.methods.map((m) =>
             tool(
-              ({ name, params }) => this.deviceService.callDeviceMethod(device.id, name, params),
+              ({ name, params }) =>
+                this.deviceService.callDeviceMethod({ deviceId: device.id, method: name, params }),
               {
                 name: m.name,
                 description: m.description,

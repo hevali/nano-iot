@@ -30,7 +30,7 @@ export function zDate() {
   }, z.date());
 }
 
-export const DevicePropertiesSchema = z.record(z.string(), z.any());
+export const DevicePropertiesDtoSchema = z.record(z.string(), z.any());
 
 export const DeviceMethodSchema = z.object({
   name: z.string(),
@@ -44,14 +44,14 @@ export const DeviceMethodSchema = z.object({
 export const DeviceDtoSchema = z.object({
   id: z.string(),
   createdAt: zDate(),
-  properties: DevicePropertiesSchema,
+  properties: DevicePropertiesDtoSchema,
   methods: DeviceMethodSchema.array(),
 });
 
 export const DeviceWithCredentialsDtoSchema = z.object({
   id: z.string(),
   createdAt: zDate(),
-  properties: DevicePropertiesSchema,
+  properties: DevicePropertiesDtoSchema,
   mqtt: z.object({
     uri: z.string(),
     ca: z.string(),
@@ -66,10 +66,11 @@ export const CreateDeviceDtoSchema = z.object({
     .min(3)
     .max(32)
     .regex(/^[a-zA-Z0-9-_]+$/),
-  properties: DevicePropertiesSchema.optional(),
+  properties: DevicePropertiesDtoSchema.optional(),
 });
 
 export type DeviceDto = z.infer<typeof DeviceDtoSchema>;
+export type DevicePropertiesDto = z.infer<typeof DevicePropertiesDtoSchema>;
 export type DeviceMethodDto = z.infer<typeof DeviceMethodSchema>;
 export type DeviceWithCredentialsDto = z.infer<typeof DeviceWithCredentialsDtoSchema>;
 export type CreateDeviceDto = z.infer<typeof CreateDeviceDtoSchema>;
