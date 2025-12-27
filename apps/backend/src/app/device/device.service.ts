@@ -4,14 +4,32 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DeviceEntity, DeviceMethodEntity } from './device.entity';
 import { Repository } from 'typeorm';
 import {
-  CreateDeviceDto,
+  type CreateDeviceDto,
+  CreateDeviceDtoSchema,
   DeviceDto,
   DeviceMethodDto,
+  type DevicePropertiesDto,
+  DevicePropertiesDtoSchema,
   DeviceWithCredentialsDto,
+  DeviceWithCredentialsDtoSchema,
 } from '@nano-iot/common';
 import { MqttService } from '../mqtt/mqtt.service';
 import { RpcService } from '../mqtt/rpc.service';
-import { RpcParams } from 'jsonrpc-lite';
+import { Tool } from '@rekog/mcp-nest';
+import { z } from 'zod';
+
+const CallDeviceMethodDtoSchema = z.object({
+  deviceId: z.string(),
+  method: z.string(),
+  params: z.union([z.object({}), z.array(z.any())]),
+});
+export type CallDeviceMethodDto = z.infer<typeof CallDeviceMethodDtoSchema>;
+
+const SetDevicePropertiesDtoSchema = z.object({
+  deviceId: z.string(),
+  properties: DevicePropertiesDtoSchema,
+});
+export type SetDevicePropertiesDto = z.infer<typeof SetDevicePropertiesDtoSchema>;
 
 @Injectable()
 export class DeviceService {
@@ -33,6 +51,12 @@ export class DeviceService {
     return this.toDeviceDto(device);
   }
 
+  @Tool({
+    name: 'create-device',
+    description: 'Creates a new device with the given ID',
+    parameters: CreateDeviceDtoSchema,
+    outputSchema: DeviceWithCredentialsDtoSchema,
+  })
   async createDevice(dto: CreateDeviceDto) {
     const existing = await this.deviceRepo.findOneBy({ id: dto.id });
     if (existing) {
@@ -44,23 +68,42 @@ export class DeviceService {
     return this.toDeviceWithCredentialsDto(device, credentials);
   }
 
-  async deleteDevice(id: string) {
-    await this.certificateService.revokeCertificate(id);
-    await this.deviceRepo.delete({ id });
+  @Tool({
+    name: 'delete-device',
+    description: 'Deletes a device with the given ID',
+    parameters: z.object({ id: z.string({ description: 'The ID of the device to delete' }) }),
+    annotations: {
+      destructiveHint: true,
+    },
+  })
+  async deleteDevice(id: string | { id: string }) {
+    const deviceId = typeof id === 'string' ? id : id.id;
+    await this.certificateService.revokeCertificate(deviceId);
+    await this.deviceRepo.delete({ id: deviceId });
+    return {};
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async setDeviceProperties(id: string, properties: Record<string, any>) {
-    const device = await this.deviceRepo.findOneOrFail({ where: { id }, relations: ['methods'] });
+  @Tool({
+    name: 'set-device-properties',
+    description: 'Set properties of a device with the given ID',
+    parameters: SetDevicePropertiesDtoSchema,
+  })
+  async setDeviceProperties(dto: SetDevicePropertiesDto) {
+    const device = await this.deviceRepo.findOneOrFail({
+      where: { id: dto.deviceId },
+      relations: ['methods'],
+    });
 
-    await this.deviceRepo.update({ id }, { properties });
-    await this.mqttService.publish(`iot/devices/${id}/properties/desired`, properties);
+    await this.deviceRepo.update({ id: dto.deviceId }, { properties: dto.properties });
+    await this.mqttService.publish(
+      `iot/devices/${dto.deviceId}/properties/desired`,
+      dto.properties
+    );
 
-    return this.toDeviceDto({ ...device, properties });
+    return this.toDeviceDto({ ...device, properties: dto.properties });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async reportDeviceProperties(id: string, properties: Record<string, any>) {
+  async reportDeviceProperties(id: string, properties: DevicePropertiesDto) {
     await this.deviceRepo.update({ id }, { properties });
   }
 
@@ -75,10 +118,16 @@ export class DeviceService {
     }
   }
 
-  async callDeviceMethod(id: string, method: string, params: RpcParams) {
-    const device = await this.deviceRepo.findOneByOrFail({ id });
+  @Tool({
+    name: 'call-device-method',
+    description: 'Invoke a device method',
+    parameters: CallDeviceMethodDtoSchema,
+    outputSchema: z.any(),
+  })
+  async callDeviceMethod(dto: CallDeviceMethodDto) {
+    const device = await this.deviceRepo.findOneByOrFail({ id: dto.deviceId });
 
-    const result = await this.rpcService.callDeviceMethod(device.id, method, params);
+    const result = await this.rpcService.callDeviceMethod(device.id, dto.method, dto.params);
     return result;
   }
 

@@ -7,6 +7,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChatEntity, ChatMessageEntity } from './chat.entity';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { TypedConfigService } from '../lib/config';
+import { McpService } from './mcp.service';
+import { A2AExecutor } from './a2a';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ChatEntity, ChatMessageEntity]), DeviceModule],
@@ -23,6 +25,8 @@ import { TypedConfigService } from '../lib/config';
       inject: [ConfigService],
     },
     AgentService,
+    McpService,
+    A2AExecutor,
   ],
   controllers: [AgentController],
 })

@@ -3,34 +3,34 @@ import { Ajv } from 'ajv';
 
 const ajv = new Ajv();
 
-function overrideJSONSchema<T>(p: z.ZodType<T>, customJSONSchema: unknown): z.ZodType<T> {
-  const wrappedInstance = p.meta({});
-  wrappedInstance._zod.toJSONSchema = () => {
-    return customJSONSchema;
-  };
-  return wrappedInstance.meta({});
-}
+// Note: zod v3 does not expose the internal JSON schema helpers used in previous
+// code (like modifying _zod.toJSONSchema). Remove that hack and use preprocessing
+// and AJV for JSON Schema validation where needed.
 
 export const zJsonSchema = z.any().refine(
-  (data: any) => {
+  (data: unknown) => {
     try {
-      ajv.compile(data);
+      ajv.compile(data as object);
       return true;
     } catch {
       return false;
     }
   },
-  { error: 'Invalid JSON Schema' }
+  { message: 'Invalid JSON Schema' }
 );
 
-export function zDate(): z.ZodType<Date> {
-  return overrideJSONSchema(
-    z.union([z.date(), z.iso.datetime().pipe(z.coerce.date())]),
-    z.toJSONSchema(z.iso.datetime())
-  );
+export function zDate() {
+  // Accept either a Date or an ISO date string and coerce strings to Date using preprocess.
+  return z.preprocess((arg: unknown) => {
+    if (typeof arg === 'string') {
+      const d = new Date(arg);
+      return isNaN(d.getTime()) ? arg : d;
+    }
+    return arg;
+  }, z.date());
 }
 
-export const DevicePropertiesSchema = z.record(z.string(), z.any());
+export const DevicePropertiesDtoSchema = z.record(z.string(), z.any());
 
 export const DeviceMethodSchema = z.object({
   name: z.string(),
@@ -44,14 +44,14 @@ export const DeviceMethodSchema = z.object({
 export const DeviceDtoSchema = z.object({
   id: z.string(),
   createdAt: zDate(),
-  properties: DevicePropertiesSchema,
+  properties: DevicePropertiesDtoSchema,
   methods: DeviceMethodSchema.array(),
 });
 
 export const DeviceWithCredentialsDtoSchema = z.object({
   id: z.string(),
   createdAt: zDate(),
-  properties: DevicePropertiesSchema,
+  properties: DevicePropertiesDtoSchema,
   mqtt: z.object({
     uri: z.string(),
     ca: z.string(),
@@ -66,10 +66,11 @@ export const CreateDeviceDtoSchema = z.object({
     .min(3)
     .max(32)
     .regex(/^[a-zA-Z0-9-_]+$/),
-  properties: DevicePropertiesSchema.optional(),
+  properties: DevicePropertiesDtoSchema.optional(),
 });
 
 export type DeviceDto = z.infer<typeof DeviceDtoSchema>;
+export type DevicePropertiesDto = z.infer<typeof DevicePropertiesDtoSchema>;
 export type DeviceMethodDto = z.infer<typeof DeviceMethodSchema>;
 export type DeviceWithCredentialsDto = z.infer<typeof DeviceWithCredentialsDtoSchema>;
 export type CreateDeviceDto = z.infer<typeof CreateDeviceDtoSchema>;

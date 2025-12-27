@@ -94,6 +94,7 @@ resource "ssh_resource" "dotenv_file" {
 PORT="3000"
 NODE_ENV="production"
 
+APP_HTTP_URL="https://${local.hostname}"
 APP_BASE_PATH="/api"
 APP_TRUST_PROXY="true"
 APP_DATA_DIR="/data"
