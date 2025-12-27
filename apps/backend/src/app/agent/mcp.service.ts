@@ -1,13 +1,11 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { MultiServerMCPClient } from '@langchain/mcp-adapters';
-import { ConfigService } from '@nestjs/config';
-import type { TypedConfigService } from '../lib/config';
 
 @Injectable()
 export class McpService implements OnModuleInit {
   private tools!: Awaited<ReturnType<MultiServerMCPClient['getTools']>>;
 
-  constructor(@Inject(ConfigService) private configService: TypedConfigService) {}
+  // constructor(@Inject(ConfigService) private configService: TypedConfigService) {}
 
   async onModuleInit() {
     // const timeMcpServer = this.configService.getOrThrow<string>('APP_MCP_TIME_SERVER');

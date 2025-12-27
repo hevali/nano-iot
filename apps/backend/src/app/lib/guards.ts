@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import * as bcrypt from 'bcrypt';
 import type { TypedConfigService } from './config';
+import { getAuthHeader } from './auth';
 
 @Injectable()
 export class BasicAuthGuard implements CanActivate {
@@ -18,16 +19,15 @@ export class BasicAuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest() as Request;
     const res = context.switchToHttp().getResponse() as Response;
 
-    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
-    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
-    if (!login || !password) {
+    const auth = getAuthHeader(req);
+    if (!auth) {
       res.setHeader('WWW-Authenticate', 'Basic');
       throw new UnauthorizedException();
     }
 
     const [user, hash] = this.configService.getOrThrow<string>('APP_INITIAL_USER').split(':');
-    const match = await bcrypt.compare(password, hash);
-    if (!match || user !== login) {
+    const match = await bcrypt.compare(auth.password, hash);
+    if (!match || user !== auth.user) {
       res.setHeader('WWW-Authenticate', 'Basic');
       throw new UnauthorizedException();
     }

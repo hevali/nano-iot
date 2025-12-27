@@ -15,6 +15,7 @@ import { TypedConfigService } from './app/lib/config';
 import session from 'express-session';
 import type { FileStore } from 'session-file-store';
 import * as path from 'path';
+import { enableA2A } from './app/agent/a2a';
 
 const FileStore: FileStore = require('session-file-store')(session);
 
@@ -75,6 +76,8 @@ async function bootstrap() {
       saveUninitialized: false,
     })
   );
+
+  enableA2A(app);
 
   const port = configService.getOrThrow<number>('PORT');
   await app.listen(port);

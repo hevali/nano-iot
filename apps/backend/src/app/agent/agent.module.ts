@@ -8,6 +8,7 @@ import { ChatEntity, ChatMessageEntity } from './chat.entity';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { TypedConfigService } from '../lib/config';
 import { McpService } from './mcp.service';
+import { A2AExecutor } from './a2a';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ChatEntity, ChatMessageEntity]), DeviceModule],
@@ -16,7 +17,7 @@ import { McpService } from './mcp.service';
       provide: ChatGoogleGenerativeAI,
       useFactory: (config: TypedConfigService) => {
         return new ChatGoogleGenerativeAI({
-          model: 'gemini-3.0-flash',
+          model: 'gemini-2.5-flash',
           apiKey: config.get('APP_GEMINI_API_KEY', ''),
           temperature: 0.2,
         });
@@ -25,6 +26,7 @@ import { McpService } from './mcp.service';
     },
     AgentService,
     McpService,
+    A2AExecutor,
   ],
   controllers: [AgentController],
 })

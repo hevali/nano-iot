@@ -8,6 +8,7 @@ export const CONFIG_SCHEMA = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
 
+  APP_HTTP_URL: z.string(),
   APP_TRUST_PROXY: z.coerce.boolean().default(false),
 
   APP_MQTT_PORT: z.coerce.number().int().min(1).max(65535).default(1884),
