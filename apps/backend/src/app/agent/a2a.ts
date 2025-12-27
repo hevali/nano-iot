@@ -91,21 +91,24 @@ export function enableA2A(app: NestExpressApplication) {
   const config = app.get<TypedConfigService>(ConfigService);
 
   const httpUrl = config.getOrThrow<string>('APP_HTTP_URL');
-  const [user, hash] = config.getOrThrow<string>('APP_INITIAL_USER').split(':');
+  const basePath = config.getOrThrow<string>('APP_BASE_PATH');
+  const href = new URL(basePath, httpUrl).href;
+  const url = href.endsWith('/') ? href : `${href}/`;
 
   const handler = new DefaultRequestHandler(
     {
       ...AGENT_CARD,
-      url: `${httpUrl}`,
+      url,
       additionalInterfaces: [
-        { url: `${httpUrl}/a2a/jsonrpc`, transport: 'JSONRPC' },
-        { url: `${httpUrl}/a2a/rest`, transport: 'HTTP+JSON' },
+        { url: `${url}a2a/jsonrpc`, transport: 'JSONRPC' },
+        { url: `${url}a2a/rest`, transport: 'HTTP+JSON' },
       ],
     },
     new InMemoryTaskStore(),
     executor
   );
 
+  const [user, hash] = config.getOrThrow<string>('APP_INITIAL_USER').split(':');
   const userBuilder = async (req: Request) => {
     const auth = getAuthHeader(req);
     if (!auth) {
