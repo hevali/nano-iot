@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  actions: read
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: ${{ github.repository_owner }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - run: npx nx run-many -t lint test build typecheck
+
+  docker-backend:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build backend image and save artifact
+        run: |
+          docker build -f apps/backend/Dockerfile -t backend:ci .
+          docker save backend:ci -o backend.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-image
+          path: backend.tar
+
+  docker-frontend:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build frontend image and save artifact
+        run: |
+          docker build -f apps/frontend/Dockerfile -t frontend:ci .
+          docker save frontend:ci -o frontend.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-image
+          path: frontend.tar
+
+  docker-docs:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build docs image and save artifact
+        run: |
+          docker build -f apps/docs/Dockerfile -t docs:ci .
+          docker save docs:ci -o docs.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs-image
+          path: docs.tar
+
+  publish-backend:
+    needs: docker-backend
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download backend image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-image
+          path: ./artifacts
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load and push backend image
+        run: |
+          docker load -i ./artifacts/backend.tar
+          docker tag backend:ci ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/backend:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/backend:latest
+
+  publish-frontend:
+    needs: docker-frontend
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download frontend image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-image
+          path: ./artifacts
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load and push frontend image
+        run: |
+          docker load -i ./artifacts/frontend.tar
+          docker tag frontend:ci ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/frontend:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/frontend:latest
+
+  publish-docs:
+    needs: docker-docs
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download docs image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-image
+          path: ./artifacts
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load and push docs image
+        run: |
+          docker load -i ./artifacts/docs.tar
+          docker tag docs:ci ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/docs:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/docs:latest
+
+  deploy:
+    needs: [publish-backend, publish-frontend, publish-docs]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: docker compose -f ~/docker-compose.yml down && docker compose -f ~/docker-compose.yml up -d

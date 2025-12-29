@@ -53,8 +53,9 @@ export class DeviceService {
     parameters: z.object({ id: z.string({ description: 'The ID of the device' }) }),
     outputSchema: DeviceDtoSchema,
   })
-  async getDevice(id: string) {
-    const device = await this.deviceRepo.findOneOrFail({ where: { id }, relations: ['methods'] });
+  async getDevice(id: string | { id: string }) {
+    const deviceId = typeof id === 'string' ? id : id.id;
+    const device = await this.deviceRepo.findOneOrFail({ where: { id: deviceId }, relations: ['methods'] });
     return this.toDeviceDto(device);
   }
 
