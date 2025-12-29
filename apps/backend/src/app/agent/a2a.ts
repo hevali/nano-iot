@@ -19,18 +19,34 @@ import { getAuthHeader } from '../lib/auth';
 
 const AGENT_CARD: Omit<AgentCard, 'url' | 'additionalInterfaces'> = {
   name: 'Nano-IoT Agent',
-  description: '',
+  description: 'An agent that helps you manage your IoT devices.',
   protocolVersion: '0.3.0',
   version: '0.0.1',
-  skills: [],
-  capabilities: {},
+  skills: [
+    {
+      id: 'list_devices',
+      name: 'List devices',
+      description: 'Returns all registred devices and there properties and methods.',
+      tags: ['device'],
+    },
+    {
+      id: 'call_device_method',
+      name: 'Call a specific device method',
+      description: 'Call a device method and get the result returned by the device.',
+      tags: ['device'],
+    },
+  ],
+  capabilities: {
+    pushNotifications: false,
+    streaming: false,
+  },
   defaultInputModes: ['text'],
   defaultOutputModes: ['text'],
 };
 
 @Injectable()
 export class A2AExecutor implements AgentExecutor {
-  constructor(private agentService: AgentService) {}
+  constructor(private agentService: AgentService) { }
 
   async execute(requestContext: RequestContext, eventBus: ExecutionEventBus): Promise<void> {
     const last = requestContext.userMessage.parts.at(-1);
@@ -49,11 +65,11 @@ export class A2AExecutor implements AgentExecutor {
     }
 
     try {
-      const { text, id } = await this.agentService.callAgent(last.text);
+      const { text } = await this.agentService.callAgent(last.text);
 
       const message: Message = {
         kind: 'message',
-        messageId: id,
+        messageId: crypto.randomUUID(),
         role: 'agent',
         parts: [{ kind: 'text', text }],
         contextId: requestContext.contextId,
@@ -62,9 +78,8 @@ export class A2AExecutor implements AgentExecutor {
       eventBus.publish(message);
       eventBus.finished();
     } catch (e) {
-      const text = `Error during agent execution: ${
-        e instanceof Error ? e.message : 'Unknown error'
-      }`;
+      const text = `Error during agent execution: ${e instanceof Error ? e.message : 'Unknown error'
+        }`;
       eventBus.publish({
         kind: 'message',
         messageId: crypto.randomUUID(),
@@ -91,14 +106,14 @@ export function enableA2A(app: NestExpressApplication) {
   const config = app.get<TypedConfigService>(ConfigService);
 
   const httpUrl = config.getOrThrow<string>('APP_HTTP_URL');
-  const basePath = config.getOrThrow<string>('APP_BASE_PATH');
+  const basePath = config.get<string>('APP_BASE_PATH', '/');
   const href = new URL(basePath, httpUrl).href;
   const url = href.endsWith('/') ? href : `${href}/`;
 
   const handler = new DefaultRequestHandler(
     {
       ...AGENT_CARD,
-      url,
+      url: `${url}a2a/jsonrpc`,
       additionalInterfaces: [
         { url: `${url}a2a/jsonrpc`, transport: 'JSONRPC' },
         { url: `${url}a2a/rest`, transport: 'HTTP+JSON' },
