@@ -7,6 +7,7 @@ import {
   type CreateDeviceDto,
   CreateDeviceDtoSchema,
   DeviceDto,
+  DeviceDtoSchema,
   DeviceMethodDto,
   type DevicePropertiesDto,
   DevicePropertiesDtoSchema,
@@ -39,13 +40,19 @@ export class DeviceService {
     private certificateService: CertificateService,
     private mqttService: MqttService,
     private rpcService: RpcService
-  ) {}
+  ) { }
 
   async getDevices() {
     const devices = await this.deviceRepo.find({ relations: ['methods'] });
     return devices.map((d) => this.toDeviceDto(d));
   }
 
+  @Tool({
+    name: 'get-device',
+    description: 'Get a device by ID',
+    parameters: z.object({ id: z.string({ description: 'The ID of the device' }) }),
+    outputSchema: DeviceDtoSchema,
+  })
   async getDevice(id: string) {
     const device = await this.deviceRepo.findOneOrFail({ where: { id }, relations: ['methods'] });
     return this.toDeviceDto(device);
@@ -71,7 +78,7 @@ export class DeviceService {
   @Tool({
     name: 'delete-device',
     description: 'Deletes a device with the given ID',
-    parameters: z.object({ id: z.string({ description: 'The ID of the device to delete' }) }),
+    parameters: z.object({ id: z.string({ description: 'The ID of the device' }) }),
     annotations: {
       destructiveHint: true,
     },
@@ -132,36 +139,20 @@ export class DeviceService {
   }
 
   private toDeviceDto(entity: DeviceEntity): DeviceDto {
-    return {
-      id: entity.id,
-      createdAt: entity.createdAt,
-      properties: entity.properties,
-      methods: entity.methods.map((m) => this.toDeviceMethodDto(m)),
-    };
-  }
-
-  private toDeviceMethodDto(entity: DeviceMethodEntity): DeviceMethodDto {
-    return {
-      name: entity.name,
-      description: entity.description,
-      definition: entity.definition,
-    };
+    return DeviceDtoSchema.parse(entity);
   }
 
   private toDeviceWithCredentialsDto(
     entity: DeviceEntity,
     credentials: Credentials
   ): DeviceWithCredentialsDto {
-    return {
-      id: entity.id,
-      createdAt: entity.createdAt,
-      properties: entity.properties,
-      mqtt: {
+    return DeviceWithCredentialsDtoSchema.parse({
+      ...entity, mqtt: {
         uri: this.mqttService.uri,
         ca: credentials.ca,
         certificate: credentials.certificate,
         key: credentials.key,
-      },
-    };
+      }
+    });
   }
 }
