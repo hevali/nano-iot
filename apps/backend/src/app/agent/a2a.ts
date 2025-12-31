@@ -46,7 +46,7 @@ const AGENT_CARD: Omit<AgentCard, 'url' | 'additionalInterfaces'> = {
 
 @Injectable()
 export class A2AExecutor implements AgentExecutor {
-  constructor(private agentService: AgentService) { }
+  constructor(private agentService: AgentService) {}
 
   async execute(requestContext: RequestContext, eventBus: ExecutionEventBus): Promise<void> {
     const last = requestContext.userMessage.parts.at(-1);
@@ -78,8 +78,9 @@ export class A2AExecutor implements AgentExecutor {
       eventBus.publish(message);
       eventBus.finished();
     } catch (e) {
-      const text = `Error during agent execution: ${e instanceof Error ? e.message : 'Unknown error'
-        }`;
+      const text = `Error during agent execution: ${
+        e instanceof Error ? e.message : 'Unknown error'
+      }`;
       eventBus.publish({
         kind: 'message',
         messageId: crypto.randomUUID(),
