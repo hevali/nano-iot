@@ -138,8 +138,11 @@ export class DeviceService {
     outputSchema: z.any(),
   })
   async callDeviceMethod(dto: CallDeviceMethodDto) {
-    const device = await this.deviceRepo.findOneByOrFail({ id: dto.deviceId });
-    if (!device.methods.find((m) => m.name === dto.method)) {
+    const device = await this.deviceRepo.findOneOrFail({
+      where: { id: dto.deviceId },
+      relations: ['methods'],
+    });
+    if (!device.methods.some((m) => m.name === dto.method)) {
       throw new NotFoundException('Device method not found');
     }
 
