@@ -116,6 +116,7 @@
     "jiti": "2.4.2",
     "jsdom": "~22.1.0",
     "jsonc-eslint-parser": "^2.1.0",
+    "lint-staged": "^16.2.7",
     "nx": "22.3.3",
     "prettier": "^2.6.2",
     "ts-jest": "^29.4.0",
