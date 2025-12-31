@@ -65,8 +65,9 @@ export const CreateDeviceDtoSchema = z.object({
     .string()
     .min(3)
     .max(32)
-    .regex(/^[a-zA-Z0-9-_]+$/),
-  properties: DevicePropertiesDtoSchema.optional(),
+    .regex(/^[a-zA-Z0-9-_]+$/)
+    .describe('The unique identifier for the device'),
+  properties: DevicePropertiesDtoSchema.optional().describe('Initial properties for the device'),
 });
 
 export type DeviceDto = z.infer<typeof DeviceDtoSchema>;

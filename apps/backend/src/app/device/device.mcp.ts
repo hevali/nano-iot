@@ -32,27 +32,27 @@ export class DeviceMcp {
     uriTemplate: 'mcp://devices/{id}',
   })
   async getDevice(req: { uri: string; id: string }) {
-    if (!req.id) {
+    try {
+      const device = await this.deviceService.getDevice(req.id);
       return {
         contents: [
           {
             uri: req.uri,
             mimeType: 'application/json',
-            text: JSON.stringify({ error: 'Device id missing' }),
+            text: JSON.stringify(device),
+          },
+        ],
+      };
+    } catch {
+      return {
+        contents: [
+          {
+            uri: req.uri,
+            mimeType: 'application/json',
+            text: JSON.stringify({ error: 'Device not found' }),
           },
         ],
       };
     }
-
-    const device = await this.deviceService.getDevice(req.id);
-    return {
-      contents: [
-        {
-          uri: req.uri,
-          mimeType: 'application/json',
-          text: JSON.stringify(device),
-        },
-      ],
-    };
   }
 }

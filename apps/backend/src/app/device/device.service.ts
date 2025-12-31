@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CertificateService, Credentials } from '../mqtt/certificate.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeviceEntity, DeviceMethodEntity } from './device.entity';
@@ -20,15 +20,17 @@ import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
 
 const CallDeviceMethodDtoSchema = z.object({
-  deviceId: z.string(),
-  method: z.string(),
-  params: z.union([z.object({}), z.array(z.any())]),
+  deviceId: z.string().describe('The ID of the device'),
+  method: z.string().describe('The name of the method to call'),
+  params: z
+    .union([z.object({}), z.array(z.any())])
+    .describe('The parameters to pass to the method'),
 });
 export type CallDeviceMethodDto = z.infer<typeof CallDeviceMethodDtoSchema>;
 
 const SetDevicePropertiesDtoSchema = z.object({
-  deviceId: z.string(),
-  properties: DevicePropertiesDtoSchema,
+  deviceId: z.string().describe('The ID of the device'),
+  properties: DevicePropertiesDtoSchema.describe('The properties to set on the device'),
 });
 export type SetDevicePropertiesDto = z.infer<typeof SetDevicePropertiesDtoSchema>;
 
@@ -40,7 +42,7 @@ export class DeviceService {
     private certificateService: CertificateService,
     private mqttService: MqttService,
     private rpcService: RpcService
-  ) { }
+  ) {}
 
   async getDevices() {
     const devices = await this.deviceRepo.find({ relations: ['methods'] });
@@ -55,7 +57,10 @@ export class DeviceService {
   })
   async getDevice(id: string | { id: string }) {
     const deviceId = typeof id === 'string' ? id : id.id;
-    const device = await this.deviceRepo.findOneOrFail({ where: { id: deviceId }, relations: ['methods'] });
+    const device = await this.deviceRepo.findOneOrFail({
+      where: { id: deviceId },
+      relations: ['methods'],
+    });
     return this.toDeviceDto(device);
   }
 
@@ -134,6 +139,9 @@ export class DeviceService {
   })
   async callDeviceMethod(dto: CallDeviceMethodDto) {
     const device = await this.deviceRepo.findOneByOrFail({ id: dto.deviceId });
+    if (!device.methods.find((m) => m.name === dto.method)) {
+      throw new NotFoundException('Device method not found');
+    }
 
     const result = await this.rpcService.callDeviceMethod(device.id, dto.method, dto.params);
     return result;
@@ -148,12 +156,13 @@ export class DeviceService {
     credentials: Credentials
   ): DeviceWithCredentialsDto {
     return DeviceWithCredentialsDtoSchema.parse({
-      ...entity, mqtt: {
+      ...entity,
+      mqtt: {
         uri: this.mqttService.uri,
         ca: credentials.ca,
         certificate: credentials.certificate,
         key: credentials.key,
-      }
+      },
     });
   }
 }
