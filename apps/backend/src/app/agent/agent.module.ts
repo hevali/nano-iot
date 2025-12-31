@@ -17,8 +17,8 @@ import { A2AExecutor } from './a2a';
       provide: ChatGoogleGenerativeAI,
       useFactory: (config: TypedConfigService) => {
         return new ChatGoogleGenerativeAI({
-          model: 'gemini-2.5-flash',
-          apiKey: config.get('APP_GEMINI_API_KEY', ''),
+          model: 'gemini-3-flash-preview',
+          apiKey: config.getOrThrow<string>('APP_GEMINI_API_KEY'),
           temperature: 0.2,
         });
       },
