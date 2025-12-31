@@ -1,5 +1,5 @@
 import { Injectable, Scope } from '@nestjs/common';
-import { Resource } from '@rekog/mcp-nest';
+import { Resource, ResourceTemplate } from '@rekog/mcp-nest';
 import { DeviceService } from '../device/device.service';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -12,7 +12,7 @@ export class DeviceMcp {
     mimeType: 'application/json',
     uri: 'mcp://devices',
   })
-  async getDevices(req: any) {
+  async getDevices(req: { uri: string }) {
     const devices = await this.deviceService.getDevices();
     return {
       contents: [
@@ -25,13 +25,13 @@ export class DeviceMcp {
     };
   }
 
-  @Resource({
+  @ResourceTemplate({
     name: 'get-device',
     description: 'Returns a device by its ID',
     mimeType: 'application/json',
-    uri: 'mcp://devices/{id}',
+    uriTemplate: 'mcp://devices/{id}',
   })
-  async getDevice(req: any) {
+  async getDevice(req: { uri: string; id: string }) {
     if (!req.id) {
       return {
         contents: [
