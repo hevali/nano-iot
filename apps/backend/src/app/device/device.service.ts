@@ -32,11 +32,17 @@ const CallDeviceMethodDtoSchema = z.object({
 });
 export type CallDeviceMethodDto = z.infer<typeof CallDeviceMethodDtoSchema>;
 
-const SetDevicePropertiesDtoSchema = z.object({
+const SetDeviceConfigurationDtoSchema = z.object({
   deviceId: z.string().describe('The ID of the device'),
-  properties: DevicePropertiesDtoSchema.describe('The properties to set on the device'),
+  configuration: DevicePropertiesDtoSchema.describe('The configuration to set on the device'),
 });
-export type SetDevicePropertiesDto = z.infer<typeof SetDevicePropertiesDtoSchema>;
+export type SetDeviceConfigurationDto = z.infer<typeof SetDeviceConfigurationDtoSchema>;
+
+const SetDeviceTagsDtoSchema = z.object({
+  deviceId: z.string().describe('The ID of the device'),
+  tags: DevicePropertiesDtoSchema.describe('The tags to set on the device'),
+});
+export type SetDeviceTagsDto = z.infer<typeof SetDeviceTagsDtoSchema>;
 
 @Injectable()
 export class DeviceService {
@@ -100,29 +106,47 @@ export class DeviceService {
     return {};
   }
 
+  async reportDeviceProperties(id: string, properties: DevicePropertiesDto) {
+    await this.deviceRepo.update({ id }, { properties });
+  }
+
+  async reportDeviceConfiguration(id: string, configuration: DevicePropertiesDto) {
+    await this.deviceRepo.update({ id }, { configuration });
+  }
+
   @McpTool({
-    name: 'set-device-properties',
-    description: 'Set properties of a device with the given ID',
-    parameters: SetDevicePropertiesDtoSchema,
+    name: 'set-device-configuration',
+    description: 'Set configuration of a device with the given ID',
+    parameters: SetDeviceConfigurationDtoSchema,
     outputSchema: DevicePropertiesDtoSchema,
   })
-  async setDeviceProperties(dto: SetDevicePropertiesDto) {
+  async setDeviceConfiguration(dto: SetDeviceConfigurationDto) {
     const device = await this.deviceRepo.findOneOrFail({
       where: { id: dto.deviceId },
       relations: ['methods'],
     });
 
-    await this.deviceRepo.update({ id: dto.deviceId }, { properties: dto.properties });
-    await this.mqttService.publish(
-      `iot/devices/${dto.deviceId}/properties/desired`,
-      dto.properties,
-    );
+    await this.deviceRepo.update({ id: dto.deviceId }, { configuration: dto.configuration });
+    await this.mqttService.publish(`iot/devices/${dto.deviceId}/configuration`, dto.configuration);
 
-    return this.toDeviceDto({ ...device, properties: dto.properties }).properties;
+    return this.toDeviceDto({ ...device, configuration: dto.configuration }).configuration;
   }
 
-  async reportDeviceProperties(id: string, properties: DevicePropertiesDto) {
-    await this.deviceRepo.update({ id }, { properties });
+  @McpTool({
+    name: 'set-device-tags',
+    description: 'Set tags of a device with the given ID',
+    parameters: SetDeviceTagsDtoSchema,
+    outputSchema: DevicePropertiesDtoSchema,
+  })
+  async setDeviceTags(dto: SetDeviceTagsDto) {
+    const device = await this.deviceRepo.findOneOrFail({
+      where: { id: dto.deviceId },
+      relations: ['methods'],
+    });
+
+    await this.deviceRepo.update({ id: dto.deviceId }, { tags: dto.tags });
+
+    return this.toDeviceDto({ ...device, tags: dto.tags }).tags;
   }
 
   async reportDeviceMethods(id: string, methods: DeviceMethodDto[]) {

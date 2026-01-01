@@ -59,7 +59,7 @@ export abstract class IoTDevice {
       await client.subscribeAsync(`iot/devices/${this.options.id}/rpc/request/+`);
 
       await client.publishAsync(
-        `iot/devices/${this.options.id}/properties/reported`,
+        `iot/devices/${this.options.id}/properties`,
         JSON.stringify(this.options.properties),
       );
 

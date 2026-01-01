@@ -37,6 +37,8 @@ const SimpleDeviceDtoSchema = z.object({
   id: z.string(),
   createdAt: zDate,
   properties: DevicePropertiesDtoSchema,
+  configuration: DevicePropertiesDtoSchema,
+  tags: DevicePropertiesDtoSchema,
 });
 
 export const DeviceDtoSchema = z.object({
@@ -61,7 +63,10 @@ export const CreateDeviceDtoSchema = z.object({
     .max(32)
     .regex(/^[a-zA-Z0-9-_]+$/)
     .describe('The unique identifier for the device'),
-  properties: DevicePropertiesDtoSchema.optional().describe('Initial properties for the device'),
+  configuration: DevicePropertiesDtoSchema.optional().describe(
+    'Initial configuration for the device'
+  ),
+  tags: DevicePropertiesDtoSchema.optional().describe('Initial tags for the device'),
 });
 
 export type DeviceDto = z.infer<typeof DeviceDtoSchema>;
