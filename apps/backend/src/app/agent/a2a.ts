@@ -26,7 +26,7 @@ const AGENT_CARD: Omit<AgentCard, 'url' | 'additionalInterfaces'> = {
     {
       id: 'list_devices',
       name: 'List devices',
-      description: 'Returns all registred devices and there properties and methods.',
+      description: 'Returns all registered devices and their properties and methods.',
       tags: ['device'],
     },
     {
