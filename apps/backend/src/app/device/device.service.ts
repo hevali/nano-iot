@@ -16,8 +16,8 @@ import {
 } from '@nano-iot/common';
 import { MqttService } from '../mqtt/mqtt.service';
 import { RpcService } from '../mqtt/rpc.service';
-import { Tool } from '@rekog/mcp-nest';
 import { z } from 'zod';
+import { McpTool } from '../lib/mcp';
 
 const CallDeviceMethodDtoSchema = z.object({
   deviceId: z.string().describe('The ID of the device'),
@@ -49,7 +49,7 @@ export class DeviceService {
     return devices.map((d) => this.toDeviceDto(d));
   }
 
-  @Tool({
+  @McpTool({
     name: 'get-device',
     description: 'Get a device by ID',
     parameters: z.object({ id: z.string({ description: 'The ID of the device' }) }),
@@ -64,7 +64,7 @@ export class DeviceService {
     return this.toDeviceDto(device);
   }
 
-  @Tool({
+  @McpTool({
     name: 'create-device',
     description: 'Creates a new device with the given ID',
     parameters: CreateDeviceDtoSchema,
@@ -81,7 +81,7 @@ export class DeviceService {
     return this.toDeviceWithCredentialsDto(device, credentials);
   }
 
-  @Tool({
+  @McpTool({
     name: 'delete-device',
     description: 'Deletes a device with the given ID',
     parameters: z.object({ id: z.string({ description: 'The ID of the device' }) }),
@@ -96,10 +96,11 @@ export class DeviceService {
     return {};
   }
 
-  @Tool({
+  @McpTool({
     name: 'set-device-properties',
     description: 'Set properties of a device with the given ID',
     parameters: SetDevicePropertiesDtoSchema,
+    outputSchema: DevicePropertiesDtoSchema,
   })
   async setDeviceProperties(dto: SetDevicePropertiesDto) {
     const device = await this.deviceRepo.findOneOrFail({
@@ -113,7 +114,7 @@ export class DeviceService {
       dto.properties
     );
 
-    return this.toDeviceDto({ ...device, properties: dto.properties });
+    return this.toDeviceDto({ ...device, properties: dto.properties }).properties;
   }
 
   async reportDeviceProperties(id: string, properties: DevicePropertiesDto) {
@@ -131,7 +132,7 @@ export class DeviceService {
     }
   }
 
-  @Tool({
+  @McpTool({
     name: 'call-device-method',
     description: 'Invoke a device method',
     parameters: CallDeviceMethodDtoSchema,

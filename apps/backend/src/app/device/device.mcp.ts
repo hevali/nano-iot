@@ -1,58 +1,28 @@
 import { Injectable, Scope } from '@nestjs/common';
-import { Resource, ResourceTemplate } from '@rekog/mcp-nest';
 import { DeviceService } from '../device/device.service';
+import { McpJSONResource, McpJSONResourceTemplate } from '../lib/mcp';
 
 @Injectable({ scope: Scope.REQUEST })
 export class DeviceMcp {
   constructor(private deviceService: DeviceService) {}
 
-  @Resource({
+  @McpJSONResource({
     name: 'list-devices',
     description: 'Returns a list of devices',
-    mimeType: 'application/json',
     uri: 'mcp://devices',
   })
-  async getDevices(req: { uri: string }) {
+  async getDevices() {
     const devices = await this.deviceService.getDevices();
-    return {
-      contents: [
-        {
-          uri: req.uri,
-          mimeType: 'application/json',
-          text: JSON.stringify(devices, null, 2),
-        },
-      ],
-    };
+    return devices;
   }
 
-  @ResourceTemplate({
+  @McpJSONResourceTemplate({
     name: 'get-device',
     description: 'Returns a device by its ID',
-    mimeType: 'application/json',
     uriTemplate: 'mcp://devices/{id}',
   })
-  async getDevice(req: { uri: string; id: string }) {
-    try {
-      const device = await this.deviceService.getDevice(req.id);
-      return {
-        contents: [
-          {
-            uri: req.uri,
-            mimeType: 'application/json',
-            text: JSON.stringify(device),
-          },
-        ],
-      };
-    } catch {
-      return {
-        contents: [
-          {
-            uri: req.uri,
-            mimeType: 'application/json',
-            text: JSON.stringify({ error: 'Device not found' }),
-          },
-        ],
-      };
-    }
+  async getDevice(req: { id: string }) {
+    const device = await this.deviceService.getDevice(req.id);
+    return device;
   }
 }

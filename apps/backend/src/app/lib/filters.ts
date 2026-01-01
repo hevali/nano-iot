@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
 import { ZodSerializationException } from 'nestjs-zod';
-import { EntityNotFoundError, QueryFailedError } from 'typeorm';
+import { EntityNotFoundError, QueryFailedError, TypeORMError } from 'typeorm';
 import { ZodError } from 'zod';
 
 function isMqttContext(host: ArgumentsHost) {
@@ -64,19 +64,28 @@ export class ZodErrorFilter extends BaseExceptionFilter {
   }
 }
 
-@Catch(EntityNotFoundError, QueryFailedError)
+@Catch(TypeORMError)
 export class TypeormErrorFilter extends AnyExceptionFilter {
   override catch(exception: unknown, host: ArgumentsHost): void {
     if (isMqttContext(host)) {
       return;
     }
 
-    if (exception instanceof EntityNotFoundError) {
-      super.catch(new NotFoundException(), host);
-    } else if (exception instanceof QueryFailedError) {
-      super.catch(new BadRequestException(), host);
-    } else {
-      super.catch(exception, host);
-    }
+    const error = getHttpError(exception as TypeORMError);
+    super.catch(error, host);
   }
+}
+
+export function getHttpError(exception: TypeORMError): HttpException {
+  if (exception instanceof QueryFailedError) {
+    return new BadRequestException('Invalid request');
+  } else if (exception instanceof EntityNotFoundError) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const className = (exception.entityClass as any)?.prototype.constructor.name.replace(
+      'Entity',
+      ''
+    );
+    return new NotFoundException(`${className || 'Resource'} not found`);
+  }
+  return new InternalServerErrorException('Unknown error');
 }

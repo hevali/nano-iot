@@ -48,8 +48,8 @@ export class DeviceController {
     @Param('id') id: string,
     @Body() properties: Record<string, unknown>
   ) {
-    const device = await this.deviceService.setDeviceProperties({ deviceId: id, properties });
-    return device.properties;
+    const props = await this.deviceService.setDeviceProperties({ deviceId: id, properties });
+    return props;
   }
 
   @JsonMqttSubscribe('iot/devices/+/properties/reported')

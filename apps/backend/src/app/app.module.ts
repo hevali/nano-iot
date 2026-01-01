@@ -53,9 +53,13 @@ import { BasicAuthGuard } from './lib/guards';
     McpModule.forRoot({
       name: 'nano-iot-mcp-server',
       version: '0.0.1',
-      instructions: 'Nano IoT MCP Server',
+      instructions: 'Nano IoT MCP Server.\n\nUse this MCP server to manage your devices remotely.',
       transport: [McpTransportType.STREAMABLE_HTTP],
       guards: [BasicAuthGuard],
+      capabilities: {
+        tools: { listChanged: false },
+        resources: { listChanged: false },
+      },
     }),
     AuthModule,
     MqttModule,
