@@ -101,16 +101,6 @@ export class DeviceController {
     await this.deviceService.reportDeviceProperties(id, properties);
   }
 
-  @JsonMqttSubscribe('iot/devices/+/configuration')
-  async onDeviceConfiguration(
-    @JsonMqttTopic() topic: string,
-    @JsonMqttPayload(new ZodValidationPipe(DevicePropertiesDtoSchema))
-    configuration: Record<string, unknown>,
-  ) {
-    const id = topic.split('/')[2];
-    await this.deviceService.reportDeviceConfiguration(id, configuration);
-  }
-
   @JsonMqttSubscribe('iot/devices/+/rpc/supported')
   async onDeviceMethods(
     @JsonMqttTopic() topic: string,

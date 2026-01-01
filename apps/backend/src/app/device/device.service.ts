@@ -110,10 +110,6 @@ export class DeviceService {
     await this.deviceRepo.update({ id }, { properties });
   }
 
-  async reportDeviceConfiguration(id: string, configuration: DevicePropertiesDto) {
-    await this.deviceRepo.update({ id }, { configuration });
-  }
-
   @McpTool({
     name: 'set-device-configuration',
     description: 'Set configuration of a device with the given ID',
