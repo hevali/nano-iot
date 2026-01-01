@@ -28,6 +28,20 @@ export abstract class IoTDevice {
       ...this.options.auth,
     });
 
+    const methods: IoTDeviceOptions['methods'] = {
+      ...this.options.methods,
+      ping: {
+        definition: {
+          description: 'Ping the device to check if it is online',
+          definition: {
+            params: null,
+            result: null,
+          },
+        },
+        handler: async () => null,
+      },
+    };
+
     client.on('connect', async () => {
       console.log('Connected');
 
@@ -36,27 +50,51 @@ export abstract class IoTDevice {
 
         if (topic.startsWith(`iot/devices/${this.options.id}/rpc/request/`)) {
           const name = payload['name'];
-          const method = this.options.methods[name];
+          const method = methods[name];
+          const id = topic.split('/')[5];
+
           if (!method) {
+            await client.publishAsync(
+              `iot/devices/${this.options.id}/rpc/response/${id}`,
+              JSON.stringify({
+                jsonrpc: '2.0',
+                id,
+                error: { code: -32601, message: 'Method not found' },
+              }),
+            );
             return;
           }
 
-          const result = await method.handler(payload['params']);
-
-          const id = topic.split('/')[5];
-
-          await client.publishAsync(
-            `iot/devices/${this.options.id}/rpc/response/${id}`,
-            JSON.stringify({
-              jsonrpc: '2.0',
-              id,
-              result,
-            }),
-          );
+          try {
+            const result = await method.handler(payload['params']);
+            await client.publishAsync(
+              `iot/devices/${this.options.id}/rpc/response/${id}`,
+              JSON.stringify({
+                jsonrpc: '2.0',
+                id,
+                result,
+              }),
+            );
+          } catch (e) {
+            console.log('Error invoking method:', e);
+            await client.publishAsync(
+              `iot/devices/${this.options.id}/rpc/response/${id}`,
+              JSON.stringify({
+                jsonrpc: '2.0',
+                id,
+                error: { code: -32602, message: 'Invalid parameters' },
+              }),
+            );
+          }
+        } else if (topic === `iot/devices/${this.options.id}/configuration`) {
+          console.log('Received configuration update:', payload);
+        } else {
+          console.warn('Unhandled topic:', topic);
         }
       });
 
       await client.subscribeAsync(`iot/devices/${this.options.id}/rpc/request/+`);
+      await client.subscribeAsync(`iot/devices/${this.options.id}/configuration`);
 
       await client.publishAsync(
         `iot/devices/${this.options.id}/properties`,
@@ -66,7 +104,7 @@ export abstract class IoTDevice {
       await client.publishAsync(
         `iot/devices/${this.options.id}/rpc/supported`,
         JSON.stringify(
-          Object.entries(this.options.methods).reduce((prev, [name, { definition }]) => {
+          Object.entries(methods).reduce((prev, [name, { definition }]) => {
             return [...prev, { ...definition, name }];
           }, [] as DeviceMethodDto[]),
         ),

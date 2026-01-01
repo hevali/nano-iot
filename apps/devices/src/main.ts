@@ -1,21 +1,70 @@
-import { connect } from 'mqtt';
+import { connect, IClientOptions } from 'mqtt';
 import * as path from 'path';
 import { promises as fs } from 'fs';
+import { z } from 'zod';
 
-const device = process.env.DEVICE;
+const CONFIG_SCHEMA = z.object({
+  device: z.string().min(1),
+  brokerUrl: z.string().url(),
+  certPath: z.string().min(1),
+});
 
-if (!device) {
-  throw new Error('Missing DEVICE env');
+type Config = z.infer<typeof CONFIG_SCHEMA> & {
+  options: IClientOptions;
+};
+
+function parseArgs(): Config {
+  const args = process.argv.slice(2);
+  const config: Partial<Config> = {};
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--device' && args[i + 1]) {
+      config.device = args[++i];
+    } else if (arg === '--broker-url' && args[i + 1]) {
+      config.brokerUrl = args[++i];
+    } else if (arg === '--cert-path' && args[i + 1]) {
+      config.certPath = args[++i];
+    } else if (arg === '--help' || arg === '-h') {
+      console.log(`
+Device MQTT Client
+
+Usage: device [options]
+
+Options:
+  --device <name>               Device ID
+  --broker-url <url>            MQTT broker URL (example: mqtts://localhost:1884)
+  --cert-path <path>            Path to certificates directory
+  --help, -h                    Show this help message
+      `);
+      process.exit(0);
+    }
+  }
+
+  const parsed = CONFIG_SCHEMA.parse(config);
+
+  return {
+    ...parsed,
+    options: {
+      rejectUnauthorized: new URL(parsed.brokerUrl).hostname !== 'localhost',
+      protocolVersion: 4,
+      reconnectPeriod: 5000,
+    },
+  };
 }
 
 async function main() {
-  const client = connect('mqtts://localhost:1884', {
-    rejectUnauthorized: false,
-    ca: await fs.readFile(path.join(process.cwd(), './apps/backend/certs/root.crt')),
-    key: await fs.readFile(path.join(process.cwd(), `./apps/backend/certs/clients/${device}.key`)),
-    cert: await fs.readFile(path.join(process.cwd(), `./apps/backend/certs/clients/${device}.crt`)),
-    protocolVersion: 4,
-    reconnectPeriod: 5000,
+  const config = parseArgs();
+
+  const client = connect(config.brokerUrl, {
+    ...config.options,
+    ca: await fs.readFile(path.join(process.cwd(), config.certPath, 'root.crt')),
+    key: await fs.readFile(
+      path.join(process.cwd(), config.certPath, `clients/${config.device}.key`)
+    ),
+    cert: await fs.readFile(
+      path.join(process.cwd(), config.certPath, `clients/${config.device}.crt`)
+    ),
   });
 
   process.on('SIGTERM', () => client.end());
@@ -33,7 +82,7 @@ async function main() {
 
       if (payload['method'] === 'ping') {
         await client.publishAsync(
-          `iot/devices/${device}/rpc/response/${id}`,
+          `iot/devices/${config.device}/rpc/response/${id}`,
           JSON.stringify({
             jsonrpc: '2.0',
             id,
@@ -43,8 +92,8 @@ async function main() {
       }
     });
 
-    await client.unsubscribeAsync(`iot/devices/${device}/rpc/request`);
-    await client.subscribeAsync(`iot/devices/${device}/rpc/request`);
+    await client.unsubscribeAsync(`iot/devices/${config.device}/rpc/request`);
+    await client.subscribeAsync(`iot/devices/${config.device}/rpc/request`);
   });
 }
 
