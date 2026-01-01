@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import * as path from 'path';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import {
+  AddConfigurationAndTagsMigration1767285324438,
   ChatEntityMigration1761017774353,
   DeviceEntityMigration1760757514001,
   DeviceMethodEntityMigration1760757514002,
@@ -42,6 +43,7 @@ import { BasicAuthGuard } from './lib/guards';
             DeviceEntityMigration1760757514001,
             DeviceMethodEntityMigration1760757514002,
             ChatEntityMigration1761017774353,
+            AddConfigurationAndTagsMigration1767285324438,
           ],
           migrationsRun: true,
           migrationsTableName: '_migrations',

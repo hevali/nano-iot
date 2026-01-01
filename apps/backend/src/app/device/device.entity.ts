@@ -17,8 +17,17 @@ export class DeviceEntity {
   @CreateDateColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date;
 
+  /** Reported by the device, read-only to the cloud */
   @Column({ type: 'simple-json', default: '{}' })
   properties!: Record<string, unknown>;
+
+  /** Set by the cloud, read-only to the device */
+  @Column({ type: 'simple-json', default: '{}' })
+  configuration!: Record<string, unknown>;
+
+  /** Set by the cloud, hidden from the device */
+  @Column({ type: 'simple-json', default: '{}' })
+  tags!: Record<string, unknown>;
 
   @OneToMany(() => DeviceMethodEntity, (method) => method.device, {
     onUpdate: 'CASCADE',
