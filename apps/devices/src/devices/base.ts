@@ -23,7 +23,6 @@ export abstract class IoTDevice {
         definition: {
           description: 'Ping the device to check if it is online',
           definition: {
-            params: null,
             result: null,
           },
         },
@@ -34,10 +33,10 @@ export abstract class IoTDevice {
     client.on('message', async (topic, message) => {
       const payload = JSON.parse(message.toString());
 
-      if (topic.startsWith(`iot/devices/${this.options.id}/rpc/request/`)) {
-        const name = payload['name'];
+      if (topic.startsWith(`iot/devices/${this.options.id}/rpc/request`)) {
+        const id = payload['id'];
+        const name = payload['method'];
         const method = methods[name];
-        const id = topic.split('/')[5];
 
         if (!method) {
           await client.publishAsync(
@@ -50,6 +49,8 @@ export abstract class IoTDevice {
           );
           return;
         }
+
+        console.log(`Invoking method: ${name} with params:`, payload['params']);
 
         try {
           const result = await method.handler(payload['params']);
@@ -79,7 +80,7 @@ export abstract class IoTDevice {
       }
     });
 
-    await client.subscribeAsync(`iot/devices/${this.options.id}/rpc/request/+`);
+    await client.subscribeAsync(`iot/devices/${this.options.id}/rpc/request`);
     await client.subscribeAsync(`iot/devices/${this.options.id}/configuration`);
 
     await client.publishAsync(

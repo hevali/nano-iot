@@ -1,33 +1,32 @@
 import * as path from 'path';
 import { promises as fs } from 'fs';
 import { z } from 'zod';
-import { GeoDevice } from './iot/geo';
-import { TemperatureSensor } from './iot/temperature-sensor';
-import { MotionSensor } from './iot/motion-sensor';
-import { LightSensor } from './iot/light-sensor';
-import { IoTDevice } from './iot/base';
-import { connectAsync } from 'mqtt';
+import { GeoDevice } from './devices/geo';
+import { TemperatureSensor } from './devices/temperature-sensor';
+import { MotionSensor } from './devices/motion-sensor';
+import { LightSensor } from './devices/light-sensor';
+import { IoTDevice } from './devices/base';
+import { connectAsync, IClientOptions } from 'mqtt';
 
 const CONFIG_SCHEMA = z.object({
   device: z.string().min(1),
   type: z.string().min(1),
   brokerUrl: z.string().url(),
-  certPath: z.string().min(1),
+  certPath: z.string().default('/certs'),
+  caCert: z.string().optional(),
+  deviceCert: z.string().optional(),
+  deviceKey: z.string().optional(),
 });
 
 type Config = z.infer<typeof CONFIG_SCHEMA> & {
-  options?: Record<string, unknown>;
+  options: IClientOptions;
 };
 
 const DEVICE_REGISTRY: Record<string, (id: string) => IoTDevice> = {
   temperature: (id) => new TemperatureSensor(id),
   motion: (id) => new MotionSensor(id),
   light: (id) => new LightSensor(id),
-  geo: (id) =>
-    new GeoDevice(id, {
-      latitude: 0,
-      longitude: 0,
-    }),
+  geo: (id) => new GeoDevice(id),
 };
 
 function parseArgs(): Config {
@@ -35,8 +34,11 @@ function parseArgs(): Config {
   const config: Partial<Config> = {};
 
   // Set defaults from environment variables
-  config.brokerUrl = process.env.MQTT_BROKER_URL || 'mqtts://localhost:1884';
+  config.brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1884';
   config.certPath = process.env.CERT_PATH || '/certs';
+  config.caCert = process.env.CA_CERT;
+  config.deviceCert = process.env.DEVICE_CERT;
+  config.deviceKey = process.env.DEVICE_KEY;
   config.device = process.env.DEVICE_ID;
   config.type = process.env.DEVICE_TYPE;
 
@@ -59,7 +61,7 @@ Usage: device [options]
 Options:
   --device <id>                 Device ID (env: DEVICE_ID)
   --type <type>                 Device type: ${Object.keys(DEVICE_REGISTRY).join(', ')}
-  --broker-url <url>            MQTT broker URL (env: MQTT_BROKER_URL, default: mqtts://localhost:1884)
+  --broker-url <url>            MQTT broker URL (env: MQTT_BROKER_URL, default: mqtt://localhost:1884)
   --cert-path <path>            Path to certificates directory (env: CERT_PATH, default: /certs)
   --help, -h                    Show this help message
 
@@ -79,8 +81,7 @@ Examples:
   return {
     ...parsed,
     options: {
-      rejectUnauthorized:
-        new URL(parsed.brokerUrl || 'mqtts://localhost:1884').hostname !== 'localhost',
+      rejectUnauthorized: new URL(parsed.brokerUrl).hostname !== 'localhost',
       protocolVersion: 4,
       reconnectPeriod: 5000,
     },
@@ -105,21 +106,22 @@ async function main() {
     process.exit(1);
   }
 
-  const certPath = config.certPath || '/certs';
-  const brokerUrl = config.brokerUrl || 'mqtts://localhost:1884';
-
   try {
     const auth = {
-      ca: await fs.readFile(path.join(certPath, 'root.crt'), 'utf-8'),
-      key: await fs.readFile(path.join(certPath, `device.key`), 'utf-8'),
-      cert: await fs.readFile(path.join(certPath, `device.crt`), 'utf-8'),
+      ca: config.caCert || (await fs.readFile(path.join(config.certPath, 'ca.crt'), 'utf-8')),
+      key:
+        config.deviceKey || (await fs.readFile(path.join(config.certPath, `device.key`), 'utf-8')),
+      cert:
+        config.deviceCert || (await fs.readFile(path.join(config.certPath, `device.crt`), 'utf-8')),
     };
 
     const device = DEVICE_REGISTRY[config.type](config.device);
 
-    console.log(`Starting ${config.type} device "${config.device}" connecting to ${brokerUrl}`);
+    console.log(
+      `Starting ${config.type} device "${config.device}" connecting to ${config.brokerUrl}`
+    );
 
-    const client = await connectAsync(brokerUrl, { ...config.options, ...auth });
+    const client = await connectAsync(config.brokerUrl, { ...config.options, ...auth });
     await device.init(client);
 
     // Handle graceful shutdown

@@ -6,11 +6,11 @@ export interface GeoLocation {
 }
 
 export class GeoDevice extends IoTDevice {
-  private location: GeoLocation;
+  private location: GeoLocation = { latitude: 0, longitude: 0 };
   private locationHistory: Array<{ timestamp: Date; location: GeoLocation }> = [];
   private geofenceRadius = 1000; // meters
 
-  constructor(id: string, location: GeoLocation) {
+  constructor(id: string) {
     super({
       id,
       methods: {
@@ -18,7 +18,6 @@ export class GeoDevice extends IoTDevice {
           definition: {
             description: 'Get the current geographic location',
             definition: {
-              params: null,
               result: { type: 'object' },
             },
           },
@@ -80,11 +79,9 @@ export class GeoDevice extends IoTDevice {
       properties: {
         name: 'Geo Device',
         description: 'IoT device that tracks and reports geographic location',
-        location,
         geofenceEnabled: false,
       },
     });
-    this.location = location;
   }
 
   private async getLocation(): Promise<GeoLocation> {

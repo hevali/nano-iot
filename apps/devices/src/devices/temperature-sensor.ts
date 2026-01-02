@@ -13,7 +13,6 @@ export class TemperatureSensor extends IoTDevice {
           definition: {
             description: 'Read the current temperature value',
             definition: {
-              params: null,
               result: { type: 'number' },
             },
           },
@@ -33,7 +32,6 @@ export class TemperatureSensor extends IoTDevice {
           definition: {
             description: 'Get all recorded temperature alerts',
             definition: {
-              params: null,
               result: { type: 'array' },
             },
           },

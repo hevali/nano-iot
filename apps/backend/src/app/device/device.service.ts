@@ -160,7 +160,6 @@ export class DeviceService {
     name: 'call-device-method',
     description: 'Invoke a device method',
     parameters: CallDeviceMethodDtoSchema,
-    outputSchema: z.any(),
   })
   async callDeviceMethod(dto: CallDeviceMethodDto) {
     const device = await this.deviceRepo.findOneOrFail({

@@ -14,7 +14,6 @@ export class MotionSensor extends IoTDevice {
           definition: {
             description: 'Check if motion is currently detected',
             definition: {
-              params: null,
               result: { type: 'boolean' },
             },
           },
@@ -24,7 +23,6 @@ export class MotionSensor extends IoTDevice {
           definition: {
             description: 'Get detailed motion sensor status',
             definition: {
-              params: null,
               result: { type: 'object' },
             },
           },
@@ -44,7 +42,6 @@ export class MotionSensor extends IoTDevice {
           definition: {
             description: 'Reset motion detection counters and state',
             definition: {
-              params: null,
               result: { type: 'string' },
             },
           },

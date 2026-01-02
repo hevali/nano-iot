@@ -14,7 +14,6 @@ export class LightSensor extends IoTDevice {
           definition: {
             description: 'Read the current illuminance level in lux',
             definition: {
-              params: null,
               result: { type: 'number' },
             },
           },
@@ -44,7 +43,6 @@ export class LightSensor extends IoTDevice {
           definition: {
             description: 'Get current light sensor metrics',
             definition: {
-              params: null,
               result: { type: 'object' },
             },
           },

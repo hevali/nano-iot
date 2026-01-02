@@ -1,4 +1,17 @@
 import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  OnModuleInit,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { ApplicationConfig } from '@nestjs/core';
+import {
   McpSseService,
   McpStreamableHttpService,
   Resource,
@@ -8,24 +21,11 @@ import {
   Tool,
   ToolOptions,
 } from '@rekog/mcp-nest';
-import { TypeORMError } from 'typeorm';
 import type { Request, Response } from 'express';
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpException,
-  InternalServerErrorException,
-  OnModuleInit,
-  Post,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { TypeORMError } from 'typeorm';
+
 import { toHttpException } from './filters';
 import { BasicAuthGuard } from './guards';
-import { ApplicationConfig } from '@nestjs/core';
 
 export function McpTool(options: ToolOptions) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,7 +41,7 @@ export function McpTool(options: ToolOptions) {
         } else if (e instanceof HttpException) {
           throw e;
         }
-        throw new InternalServerErrorException('Unknown error');
+        throw e;
       }
     };
 
