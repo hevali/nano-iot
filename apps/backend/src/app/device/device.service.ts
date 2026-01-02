@@ -23,7 +23,7 @@ const CallDeviceMethodDtoSchema = z.object({
   deviceId: z.string().describe('The ID of the device'),
   method: z.string().describe('The name of the method to call'),
   params: z
-    .union([z.object({}), z.array(z.any())])
+    .union([z.custom((data) => typeof data === 'object' && data !== null), z.array(z.any())])
     .describe('The parameters to pass to the method'),
 });
 export type CallDeviceMethodDto = z.infer<typeof CallDeviceMethodDtoSchema>;
@@ -156,7 +156,6 @@ export class DeviceService {
     name: 'call-device-method',
     description: 'Invoke a device method',
     parameters: CallDeviceMethodDtoSchema,
-    outputSchema: z.any(),
   })
   async callDeviceMethod(dto: CallDeviceMethodDto) {
     const device = await this.deviceRepo.findOneOrFail({

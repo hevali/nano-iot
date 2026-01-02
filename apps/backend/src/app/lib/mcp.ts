@@ -7,7 +7,7 @@ import {
   ToolOptions,
 } from '@rekog/mcp-nest';
 import { TypeORMError } from 'typeorm';
-import { HttpException, InternalServerErrorException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { getHttpError } from './filters';
 
 export function McpTool(options: ToolOptions) {
@@ -24,7 +24,7 @@ export function McpTool(options: ToolOptions) {
         } else if (e instanceof HttpException) {
           throw e;
         }
-        throw new InternalServerErrorException('Unknown error');
+        throw e;
       }
     };
 
