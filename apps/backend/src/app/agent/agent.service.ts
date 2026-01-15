@@ -3,8 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ChatEntity, ChatMessageEntity } from './chat.entity';
 import { Repository } from 'typeorm';
 import { Logger, OnModuleInit, Injectable } from '@nestjs/common';
-import { createAgent, createMiddleware, ReactAgent, tool } from 'langchain';
+import { createAgent, createMiddleware, DynamicStructuredTool, ReactAgent, tool } from 'langchain';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ClientFactory } from '@a2a-js/sdk/client';
+import { Message } from '@a2a-js/sdk';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { BaseMessage, ChatMessage, HumanMessage } from '@langchain/core/messages';
@@ -59,7 +61,7 @@ export class AgentService implements OnModuleInit {
         description:
           'Dedicated agent to handle interaction with a specific device. Delegate device actions to this agent. Whenever you need information or take action on a specific device, call this agent.',
         schema: z.object({
-          deviceId: z.string({ message: 'ID of the device.' }),
+          deviceId: z.string().describe('ID of the device.'),
           task: z
             .string()
             .describe('Describe step by step what the agent should do with the device.'),
@@ -86,7 +88,7 @@ export class AgentService implements OnModuleInit {
         description:
           'Use this Agent to look up information that you do not know but might be able to find through web search.',
         schema: z.object({
-          query: z.string({ message: 'The web query you want to perform.' }),
+          query: z.string().describe('The web query you want to perform.'),
         }),
       }
     );
@@ -146,5 +148,47 @@ If you receive information from another agent, pretend as if the answer comes fr
     ]);
 
     return { id: chat.id, text: answer };
+  }
+
+  async a2aSupervisor(urls: string[]) {
+    const subAgents: DynamicStructuredTool[] = [];
+
+    for (const url of urls) {
+      const factory = new ClientFactory();
+      const client = await factory.createFromUrl(url);
+      const card = await client.getAgentCard();
+      const callSubagent = tool(
+        async ({ query }) => {
+          const response = await client.sendMessage({
+            message: {
+              messageId: randomUUID(),
+              role: 'user',
+              parts: [{ kind: 'text', text: query }],
+              kind: 'message',
+            },
+          });
+
+          const result = response as Message;
+          return result.parts[0].kind === 'text' ? result.parts[0].text : '';
+        },
+        {
+          name: card.name,
+          description: `# ${card.name}\n\n## Description\n${card.description}${
+            card.skills.length > 0
+              ? `\n\n# Skills\n\n${card.skills
+                  .map((s) => `- ${s.name}: ${s.description}`)
+                  .join('\n')}`
+              : ''
+          }`,
+          schema: z.object({
+            query: z.string().describe(`The query to send to subagent ${card.name}`),
+          }),
+        }
+      );
+
+      subAgents.push(callSubagent);
+    }
+
+    return createAgent({ model: this.model, tools: subAgents });
   }
 }
