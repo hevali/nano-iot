@@ -39,9 +39,6 @@ async function bootstrap() {
     if (req.url === `/${DOCS_PATH}/`) {
       res.redirect(301, `/${DOCS_PATH}`);
     }
-    if (req.url.startsWith(`/${DOCS_PATH}`)) {
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-    }
     next();
   });
 
