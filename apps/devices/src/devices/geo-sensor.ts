@@ -156,34 +156,34 @@ export class GeoDevice extends IoTDevice {
   }
 
   protected override async simulate(): Promise<void> {
-      if (this.configuration['simulateMovement']) {
-          // Random walk: move slightly
-          const lat = this.properties['latitude'] as number;
-          const lon = this.properties['longitude'] as number;
-          
-          // Approx 111km per degree. 0.0001 deg is ~11 meters.
-          const dLat = (Math.random() - 0.5) * 0.0002; 
-          const dLon = (Math.random() - 0.5) * 0.0002;
-          
-          const newLat = parseFloat((lat + dLat).toFixed(6));
-          const newLon = parseFloat((lon + dLon).toFixed(6));
-          
-           // Update location
-          this.locationHistory.push({
-            timestamp: new Date(),
-            location: { latitude: newLat, longitude: newLon },
-          });
-          
-          await this.reportProperties({ latitude: newLat, longitude: newLon });
-      }
+    if (this.configuration['simulateMovement']) {
+      // Random walk: move slightly
+      const lat = this.properties['latitude'] as number;
+      const lon = this.properties['longitude'] as number;
+
+      // Approx 111km per degree. 0.0001 deg is ~11 meters.
+      const dLat = (Math.random() - 0.5) * 0.0002;
+      const dLon = (Math.random() - 0.5) * 0.0002;
+
+      const newLat = parseFloat((lat + dLat).toFixed(6));
+      const newLon = parseFloat((lon + dLon).toFixed(6));
+
+      // Update location
+      this.locationHistory.push({
+        timestamp: new Date(),
+        location: { latitude: newLat, longitude: newLon },
+      });
+
+      await this.reportProperties({ latitude: newLat, longitude: newLon });
+    }
   }
-  
+
   protected override async onConfigurationChange(patch: Record<string, unknown>): Promise<void> {
     if ('geofenceRadius' in patch) {
-        // Just update property if needed, but 'geofenceEnabled' is logic based.
-        const radius = patch['geofenceRadius'] as number;
-        await this.reportProperties({ geofenceEnabled: radius > 0 });
-        console.log(`Geofence radius set to ${radius}m`);
+      // Just update property if needed, but 'geofenceEnabled' is logic based.
+      const radius = patch['geofenceRadius'] as number;
+      await this.reportProperties({ geofenceEnabled: radius > 0 });
+      console.log(`Geofence radius set to ${radius}m`);
     }
   }
 

@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { promises as fs } from 'fs';
 import { z } from 'zod';
-import { GeoDevice } from './devices/geo';
+import { GeoDevice } from './devices/geo-sensor';
 import { TemperatureSensor } from './devices/temperature-sensor';
 import { MotionSensor } from './devices/motion-sensor';
 import { LightSensor } from './devices/light-sensor';
@@ -11,7 +11,7 @@ import { connectAsync, IClientOptions } from 'mqtt';
 const CONFIG_SCHEMA = z.object({
   device: z.string().min(1),
   type: z.string().min(1),
-  brokerUrl: z.string().url(),
+  brokerUrl: z.url(),
   certPath: z.string().default('/certs'),
   caCert: z.string().optional(),
   deviceCert: z.string().optional(),
