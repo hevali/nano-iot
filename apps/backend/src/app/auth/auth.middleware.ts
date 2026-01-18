@@ -11,7 +11,9 @@ export class AuthMiddleware implements NestMiddleware {
 
     // Unauthorized
     if (req.accepts('html')) {
-      res.redirect(302, '/auth/login');
+      const path = req.originalUrl || req.url;
+      const query = path && path !== '/' ? `?redirectTo=${encodeURIComponent(path)}` : '';
+      res.redirect(302, `/auth/login${query}`);
     } else {
       res.status(401).json(new UnauthorizedException('Not logged in').getResponse());
     }

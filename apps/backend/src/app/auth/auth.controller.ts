@@ -18,9 +18,10 @@ export class AuthController {
 
   @Get('login')
   async login(@Req() req: Request, @Res() res: Response) {
+    const redirectTo = this.getRedirectTo(req, '/docs');
     if (req.session.user) {
       // Already logged in
-      res.redirect(302, '/docs');
+      res.redirect(302, redirectTo);
       return;
     }
 
@@ -29,7 +30,7 @@ export class AuthController {
       : '';
     const html =
       error +
-      `<form action="/auth/login" method="post">
+      `<form action="/auth/login?redirectTo=${encodeURIComponent(redirectTo)}" method="post">
 Username: <input name="username"><br>
 Password: <input name="password" type="password"><br>
 <input type="submit" text="Login"></form>`;
@@ -55,7 +56,8 @@ Password: <input name="password" type="password"><br>
     await promisify(req.session.save.bind(req.session))();
 
     if (req.accepts('html')) {
-      res.redirect(302, '/docs');
+      const redirectTo = this.getRedirectTo(req, '/docs');
+      res.redirect(302, redirectTo);
     } else {
       res.json({});
     }
@@ -70,13 +72,8 @@ Password: <input name="password" type="password"><br>
       await promisify(req.session.destroy.bind(req.session))();
     }
 
-    // Only allow relative paths.
-    let redirectTo = req.query['redirectTo'] || '/';
-    if (typeof redirectTo !== 'string' || !redirectTo.startsWith('/')) {
-      redirectTo = '/';
-    }
-
     if (req.accepts('html')) {
+      const redirectTo = this.getRedirectTo(req, '/');
       res.clearCookie('connect.sid').redirect(302, redirectTo);
     } else {
       res.clearCookie('connect.sid').json({});
@@ -98,5 +95,10 @@ Password: <input name="password" type="password"><br>
   @Get('user')
   async user(@Req() req: Request): Promise<session.SessionData['user']> {
     return req.session.user as session.SessionData['user'];
+  }
+
+  private getRedirectTo(req: Request, fallback: string) {
+    const redirectTo = req.query['redirectTo'];
+    return typeof redirectTo === 'string' && redirectTo.startsWith('/') ? redirectTo : fallback;
   }
 }
