@@ -27,7 +27,7 @@ export class MqttServerService implements OnModuleInit {
   constructor(
     private aedes: Aedes,
     private discover: DiscoveryService,
-    private externalContextCreator: ExternalContextCreator
+    private externalContextCreator: ExternalContextCreator,
   ) {}
 
   async onModuleInit() {
@@ -46,7 +46,7 @@ export class MqttServerService implements OnModuleInit {
         undefined,
         undefined,
         undefined,
-        'mqtt-subscribe'
+        'mqtt-subscribe',
       );
 
       await promisify<void>((cb) =>
@@ -71,8 +71,8 @@ export class MqttServerService implements OnModuleInit {
           () => {
             this.logger.log(`Subscribed to topic ${meta} in ${discoveredMethod.parentClass.name}`);
             cb(null);
-          }
-        )
+          },
+        ),
       )();
     }
 
@@ -114,7 +114,7 @@ export class MqttServerService implements OnModuleInit {
         cb(null);
       } else {
         this.logger.warn(
-          `Client ${clientId} is not authorzied to publish to topic ${packet.topic}`
+          `Client ${clientId} is not authorzied to publish to topic ${packet.topic}`,
         );
         cb(new Error('Topic not allowed'));
       }
@@ -149,14 +149,18 @@ export class MqttServerService implements OnModuleInit {
           dup: false,
           retain: false,
         },
-        (err) => cb(err, null)
-      )
+        (err) => cb(err, null),
+      ),
     )();
   }
 
   async subscribe(
     topic: string,
-    handler: (topic: string, payload: unknown, rawPayload: string | Buffer<ArrayBufferLike>) => void
+    handler: (
+      topic: string,
+      payload: unknown,
+      rawPayload: string | Buffer<ArrayBufferLike>,
+    ) => void,
   ) {
     await promisify<void>((cb) =>
       this.aedes.subscribe(
@@ -172,8 +176,8 @@ export class MqttServerService implements OnModuleInit {
           handler(packet.topic, payload, packet.payload);
           cb();
         },
-        () => cb(null)
-      )
+        () => cb(null),
+      ),
     )();
   }
 
@@ -205,10 +209,13 @@ export class MqttServerService implements OnModuleInit {
 
 @Injectable()
 export class MqttService {
-  constructor(private mqttServerService: MqttServerService, private configService: ConfigService) {}
+  constructor(
+    private mqttServerService: MqttServerService,
+    private configService: ConfigService,
+  ) {}
 
   readonly uri = `mqtts://${this.configService.getOrThrow(
-    'APP_EXTERNAL_MQTT_HOST'
+    'APP_EXTERNAL_MQTT_HOST',
   )}:${this.configService.getOrThrow('APP_EXTERNAL_MQTT_PORT')}`;
 
   async publish(topic: string, message: string | Record<string, unknown>) {
@@ -217,7 +224,7 @@ export class MqttService {
 
   async subscribe(
     topic: string,
-    handler: (topic: string, payload: unknown) => void | Promise<void>
+    handler: (topic: string, payload: unknown) => void | Promise<void>,
   ) {
     await this.mqttServerService.subscribe(topic, handler);
   }

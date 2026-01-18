@@ -84,7 +84,7 @@ export function McpJSONResourceTemplate(options: Omit<ResourceTemplateOptions, '
     return ResourceTemplate({ ...options, mimeType: 'application/json' })(
       target,
       propertyKey,
-      descriptor
+      descriptor,
     );
   };
 }
@@ -120,14 +120,14 @@ function toMcpJSONResponse(uri: string, payload: object) {
 export class McpController {
   constructor(
     private mcpStreamableHttpService: McpStreamableHttpService,
-    private mcpSseService: McpSseService
+    private mcpSseService: McpSseService,
   ) {}
 
   @Post('/mcp')
   async handlePostRequest(
     @Req() req: Request,
     @Res() res: Response,
-    @Body() body: unknown
+    @Body() body: unknown,
   ): Promise<void> {
     await this.mcpStreamableHttpService.handlePostRequest(req, res, body);
   }
@@ -146,7 +146,7 @@ export class McpController {
   async handleSseRequest(
     @Req() req: Request,
     @Res() res: Response,
-    @Body() body: unknown
+    @Body() body: unknown,
   ): Promise<void> {
     await this.mcpSseService.handleMessage(req, res, body);
   }

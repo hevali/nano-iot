@@ -54,7 +54,7 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
   constructor(
     private broker: Aedes,
     private certificateService: CertificateService,
-    @Inject(ConfigService) private configService: TypedConfigService
+    @Inject(ConfigService) private configService: TypedConfigService,
   ) {}
 
   async onApplicationBootstrap() {
@@ -95,7 +95,7 @@ export class MqttModule implements OnApplicationBootstrap, OnApplicationShutdown
 
   async onApplicationShutdown() {
     await new Promise<void>((res, rej) =>
-      this.broker.close(() => this.server.close((err) => (err ? rej(err) : res())))
+      this.broker.close(() => this.server.close((err) => (err ? rej(err) : res()))),
     );
   }
 

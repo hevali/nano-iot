@@ -54,13 +54,13 @@ export class CertificateService implements OnModuleInit {
       this.configService.get<string>('APP_MQTT_SERVER_CERT', '') ||
       (await fs.readFile(
         this.configService.getOrThrow<string>('APP_MQTT_SERVER_CERT_PATH'),
-        'utf-8'
+        'utf-8',
       ));
     this.serverKey =
       this.configService.get<string>('APP_MQTT_SERVER_KEY', '') ||
       (await fs.readFile(
         this.configService.getOrThrow<string>('APP_MQTT_SERVER_KEY_PATH'),
-        'utf-8'
+        'utf-8',
       ));
 
     this.mqttCertPath = this.configService.get<string>('APP_MQTT_TLS_CERT_PATH', '');
@@ -186,7 +186,7 @@ export class CertificateService implements OnModuleInit {
       await execFile(
         'openssl',
         ['verify', '-partial_chain', '-CAfile', this.mqttCertPath, deviceCertPath],
-        {}
+        {},
       );
       this.logger.log(`Verified certificate chain`);
 
@@ -228,7 +228,7 @@ export class CertificateService implements OnModuleInit {
             '-revoke',
             path.join(this.caPath, 'certs', `${serial}.pem`),
           ],
-          {}
+          {},
         );
 
         this.logger.log(`Revoked certificate for client ${clientId} (serial: ${serial})`);
@@ -236,7 +236,7 @@ export class CertificateService implements OnModuleInit {
         await execFile(
           'openssl',
           ['ca', '-config', this.configPath, '-batch', '-gencrl', '-out', this.crlPath],
-          {}
+          {},
         );
       }
 

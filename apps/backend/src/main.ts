@@ -71,7 +71,7 @@ async function bootstrap() {
       },
       resave: false,
       saveUninitialized: false,
-    })
+    }),
   );
 
   enableA2A(app);

@@ -45,7 +45,7 @@ export class DeviceService {
     @InjectRepository(DeviceEntity) private deviceMethodRepo: Repository<DeviceMethodEntity>,
     private certificateService: CertificateService,
     private mqttService: MqttService,
-    private rpcService: RpcService
+    private rpcService: RpcService,
   ) {}
 
   async getDevices() {
@@ -115,7 +115,7 @@ export class DeviceService {
     await this.deviceRepo.update({ id: dto.deviceId }, { properties: dto.properties });
     await this.mqttService.publish(
       `iot/devices/${dto.deviceId}/properties/desired`,
-      dto.properties
+      dto.properties,
     );
 
     return this.toDeviceDto({ ...device, properties: dto.properties }).properties;
@@ -161,7 +161,7 @@ export class DeviceService {
 
   private toDeviceWithCredentialsDto(
     entity: DeviceEntity,
-    credentials: Credentials
+    credentials: Credentials,
   ): DeviceWithCredentialsDto {
     return DeviceWithCredentialsDtoSchema.parse({
       ...entity,

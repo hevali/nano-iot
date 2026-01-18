@@ -20,7 +20,7 @@ export class AgentService implements OnModuleInit {
     private model: ChatGoogleGenerativeAI,
     private deviceService: DeviceService,
     @InjectRepository(ChatEntity) private chatRepo: Repository<ChatEntity>,
-    @InjectRepository(ChatMessageEntity) private chatMessageRepo: Repository<ChatMessageEntity>
+    @InjectRepository(ChatMessageEntity) private chatMessageRepo: Repository<ChatMessageEntity>,
   ) {}
 
   async onModuleInit() {
@@ -44,8 +44,8 @@ export class AgentService implements OnModuleInit {
                 description: m.description,
                 schema: m.definition.params,
                 responseFormat: m.definition.result,
-              }
-            )
+              },
+            ),
           ),
           middleware: [loggerMiddleware],
         });
@@ -66,7 +66,7 @@ export class AgentService implements OnModuleInit {
             .string()
             .describe('Describe step by step what the agent should do with the device.'),
         }),
-      }
+      },
     );
 
     const webSearchAgent = createAgent({
@@ -90,7 +90,7 @@ export class AgentService implements OnModuleInit {
         schema: z.object({
           query: z.string().describe('The web query you want to perform.'),
         }),
-      }
+      },
     );
 
     const getDevicesTool = tool(
@@ -99,7 +99,7 @@ export class AgentService implements OnModuleInit {
         name: 'getDevices',
         description: 'Return all available devices.',
         schema: z.object({}),
-      }
+      },
     );
 
     this.agent = createAgent({
@@ -120,7 +120,7 @@ If you receive information from another agent, pretend as if the answer comes fr
       : this.chatRepo.save({ id: randomUUID(), messages: [] }));
 
     const messages: BaseMessage[] = chat.messages.map(
-      ({ role, text }) => new ChatMessage(text, role)
+      ({ role, text }) => new ChatMessage(text, role),
     );
     messages.push(new HumanMessage(question));
 
@@ -183,7 +183,7 @@ If you receive information from another agent, pretend as if the answer comes fr
           schema: z.object({
             query: z.string().describe(`The query to send to subagent ${card.name}`),
           }),
-        }
+        },
       );
 
       subAgents.push(callSubagent);

@@ -12,7 +12,7 @@ const zJsonSchema = z.any().refine(
       return false;
     }
   },
-  { error: 'Invalid JSON Schema' }
+  { error: 'Invalid JSON Schema' },
 );
 
 const zDate = z.codec(z.union([z.iso.datetime(), z.date()]), z.date(), {

@@ -41,7 +41,7 @@ export const createParamDecorator =
       ROUTE_ARGS_METADATA,
       assignMetadata(args, type, index, paramData, ...paramPipes),
       target.constructor,
-      key
+      key,
     );
   };
 

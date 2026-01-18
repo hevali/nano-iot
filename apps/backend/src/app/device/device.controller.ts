@@ -46,7 +46,7 @@ export class DeviceController {
   @ApiBody({ type: Object })
   async updateDeviceProperties(
     @Param('id') id: string,
-    @Body() properties: Record<string, unknown>
+    @Body() properties: Record<string, unknown>,
   ) {
     const props = await this.deviceService.setDeviceProperties({ deviceId: id, properties });
     return props;
@@ -56,7 +56,7 @@ export class DeviceController {
   async onDeviceProperties(
     @JsonMqttTopic() topic: string,
     @JsonMqttPayload(new ZodValidationPipe(DevicePropertiesDtoSchema))
-    properties: Record<string, unknown>
+    properties: Record<string, unknown>,
   ) {
     const id = topic.split('/')[2];
     await this.deviceService.reportDeviceProperties(id, properties);
@@ -65,7 +65,7 @@ export class DeviceController {
   @JsonMqttSubscribe('iot/devices/+/rpc/supported')
   async onDeviceMethods(
     @JsonMqttTopic() topic: string,
-    @JsonMqttPayload(new ZodValidationPipe(DeviceMethodSchema.array())) methods: DeviceMethodDto[]
+    @JsonMqttPayload(new ZodValidationPipe(DeviceMethodSchema.array())) methods: DeviceMethodDto[],
   ) {
     const id = topic.split('/')[2];
     await this.deviceService.reportDeviceMethods(id, methods);

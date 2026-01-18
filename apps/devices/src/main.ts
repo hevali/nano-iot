@@ -38,7 +38,7 @@ async function main() {
             jsonrpc: '2.0',
             id,
             result: null,
-          })
+          }),
         );
       }
     });

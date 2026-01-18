@@ -51,7 +51,7 @@ export abstract class IoTDevice {
               jsonrpc: '2.0',
               id,
               result,
-            })
+            }),
           );
         }
       });
@@ -60,7 +60,7 @@ export abstract class IoTDevice {
 
       await client.publishAsync(
         `iot/devices/${this.options.id}/properties/reported`,
-        JSON.stringify(this.options.properties)
+        JSON.stringify(this.options.properties),
       );
 
       await client.publishAsync(
@@ -68,8 +68,8 @@ export abstract class IoTDevice {
         JSON.stringify(
           Object.entries(this.options.methods).reduce((prev, [name, { definition }]) => {
             return [...prev, { ...definition, name }];
-          }, [] as DeviceMethodDto[])
-        )
+          }, [] as DeviceMethodDto[]),
+        ),
       );
     });
   }

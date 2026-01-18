@@ -121,7 +121,7 @@ export function enableA2A(app: NestExpressApplication) {
       ],
     },
     new InMemoryTaskStore(),
-    executor
+    executor,
   );
 
   const [user, hash] = config.getOrThrow<string>('APP_INITIAL_USER').split(':');

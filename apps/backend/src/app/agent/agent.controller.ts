@@ -5,7 +5,10 @@ import { MqttService } from '../mqtt/mqtt.service';
 
 @Controller('agents')
 export class AgentController {
-  constructor(private agentService: AgentService, private mqttService: MqttService) {}
+  constructor(
+    private agentService: AgentService,
+    private mqttService: MqttService,
+  ) {}
 
   @JsonMqttSubscribe('chat')
   async startChat(@JsonMqttRawPayload() payload: string | Buffer<ArrayBufferLike>) {
@@ -16,7 +19,7 @@ export class AgentController {
   @JsonMqttSubscribe('chat/+/request')
   async continueChat(
     @JsonMqttRawPayload() payload: string | Buffer<ArrayBufferLike>,
-    @JsonMqttTopic() topic: string
+    @JsonMqttTopic() topic: string,
   ) {
     const id = topic.split('/')[1];
     try {

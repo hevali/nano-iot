@@ -119,7 +119,7 @@ export class AppModule implements NestModule {
         { path: '/auth/login', method: RequestMethod.POST },
         { path: '/auth/logout', method: RequestMethod.GET },
         { path: '/mcp', method: RequestMethod.ALL },
-        { path: '/a2a/*path', method: RequestMethod.ALL }
+        { path: '/a2a/*path', method: RequestMethod.ALL },
       )
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }

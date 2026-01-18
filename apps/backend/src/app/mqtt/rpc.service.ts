@@ -20,7 +20,7 @@ export class RpcDiscoveryService implements OnModuleInit {
   constructor(
     private aedes: Aedes,
     private discover: DiscoveryService,
-    private externalContextCreator: ExternalContextCreator
+    private externalContextCreator: ExternalContextCreator,
   ) {}
 
   async onModuleInit() {
@@ -49,7 +49,7 @@ export class RpcDiscoveryService implements OnModuleInit {
         undefined,
         undefined,
         undefined,
-        'mqtt-rpc'
+        'mqtt-rpc',
       );
 
       this.methods.set(meta, async (params, { id, clientId }) => {
@@ -80,8 +80,8 @@ export class RpcDiscoveryService implements OnModuleInit {
               dup: false,
               retain: false,
             },
-            cb
-          )
+            cb,
+          ),
         )();
       });
 
@@ -100,7 +100,7 @@ export class RpcDiscoveryService implements OnModuleInit {
 
         cb();
       },
-      () => this.logger.log('Subscribed to topic iot/devices/+/rpc/request/+')
+      () => this.logger.log('Subscribed to topic iot/devices/+/rpc/request/+'),
     );
 
     // Device to Cloud RPC response
@@ -115,7 +115,7 @@ export class RpcDiscoveryService implements OnModuleInit {
 
         cb();
       },
-      () => this.logger.log('Subscribed to topic iot/devices/+/rpc/response/+')
+      () => this.logger.log('Subscribed to topic iot/devices/+/rpc/response/+'),
     );
 
     this.aedes.on('closed', () => {
@@ -129,7 +129,7 @@ export class RpcDiscoveryService implements OnModuleInit {
     clientId: string,
     method: string,
     params: JSONRpc.RpcParams,
-    timeout = 10000
+    timeout = 10000,
   ): Promise<T> {
     this.logger.debug(`Calling device ${clientId}.${method}()`);
 
@@ -165,7 +165,7 @@ export class RpcDiscoveryService implements OnModuleInit {
           if (err) {
             rej(err);
           }
-        }
+        },
       );
     });
   }
@@ -190,8 +190,8 @@ export class RpcDiscoveryService implements OnModuleInit {
             dup: false,
             retain: false,
           },
-          cb
-        )
+          cb,
+        ),
       )();
       return;
     }
@@ -206,7 +206,7 @@ export class RpcDiscoveryService implements OnModuleInit {
     if (!handler) {
       const error = JSONRpc.error(
         request.payload.id,
-        JSONRpc.JsonRpcError.methodNotFound(`Method ${request.payload.method} not found`)
+        JSONRpc.JsonRpcError.methodNotFound(`Method ${request.payload.method} not found`),
       );
 
       await promisify<void>((cb) =>
@@ -219,8 +219,8 @@ export class RpcDiscoveryService implements OnModuleInit {
             dup: false,
             retain: false,
           },
-          cb
-        )
+          cb,
+        ),
       )();
     } else {
       handler(request.payload.params, {
@@ -267,7 +267,7 @@ export class RpcService {
     clientId: string,
     method: string,
     params: JSONRpc.RpcParams,
-    timeout = 10000
+    timeout = 10000,
   ): Promise<T> {
     return this.rpcDiscoveryService.call(clientId, method, params, timeout);
   }

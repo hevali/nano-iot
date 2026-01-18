@@ -31,7 +31,7 @@ const items = ref<MenuItem[]>([
 
 const redirectTo = new URL(
   (import.meta.env.BASE_URL + '/login').replace('//', '/'),
-  location.origin
+  location.origin,
 ).pathname;
 const logoutUrl = `/api/auth/logout?redirectTo=${encodeURIComponent(redirectTo)}`;
 </script>

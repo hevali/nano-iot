@@ -79,7 +79,7 @@ export function toHttpException(exception: TypeORMError): HttpException {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const className = (exception.entityClass as any)?.prototype.constructor.name.replace(
       'Entity',
-      ''
+      '',
     );
     return new NotFoundException(`${className || 'Resource'} not found`);
   }
