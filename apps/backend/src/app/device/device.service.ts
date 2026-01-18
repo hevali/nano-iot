@@ -19,7 +19,6 @@ import { RpcService } from '../mqtt/rpc.service';
 import { z } from 'zod';
 import { RpcParams } from 'jsonrpc-lite';
 import { McpTool } from '../lib/mcp';
-import * as JSONRpc from 'jsonrpc-lite';
 
 const ObjectSchema = z.custom((data) => typeof data === 'object' && data !== null);
 ObjectSchema._zod.toJSONSchema = () => z.toJSONSchema(z.object());
