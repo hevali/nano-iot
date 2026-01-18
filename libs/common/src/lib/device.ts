@@ -3,32 +3,23 @@ import { Ajv } from 'ajv';
 
 const ajv = new Ajv();
 
-// Note: zod v3 does not expose the internal JSON schema helpers used in previous
-// code (like modifying _zod.toJSONSchema). Remove that hack and use preprocessing
-// and AJV for JSON Schema validation where needed.
-
-export const zJsonSchema = z.any().refine(
-  (data: unknown) => {
+const zJsonSchema = z.any().refine(
+  (data) => {
     try {
-      ajv.compile(data as object);
+      ajv.compile(data);
       return true;
     } catch {
       return false;
     }
   },
-  { message: 'Invalid JSON Schema' }
+  { error: 'Invalid JSON Schema' }
 );
 
-export function zDate() {
-  // Accept either a Date or an ISO date string and coerce strings to Date using preprocess.
-  return z.preprocess((arg: unknown) => {
-    if (typeof arg === 'string') {
-      const d = new Date(arg);
-      return isNaN(d.getTime()) ? arg : d;
-    }
-    return arg;
-  }, z.date());
-}
+const zDate = z.codec(z.union([z.iso.datetime(), z.date()]), z.date(), {
+  decode: (stringOrDate) => new Date(stringOrDate),
+  encode: (date) => date.toISOString(),
+}) as unknown as z.ZodCodec<z.ZodISODateTime, z.ZodDate>;
+zDate._zod.toJSONSchema = () => z.toJSONSchema(z.iso.datetime());
 
 export const DevicePropertiesDtoSchema = z.record(z.string(), z.any());
 
@@ -41,17 +32,19 @@ export const DeviceMethodSchema = z.object({
   }),
 });
 
-export const DeviceDtoSchema = z.object({
+const SimpleDeviceDtoSchema = z.object({
   id: z.string(),
-  createdAt: zDate(),
+  createdAt: zDate,
   properties: DevicePropertiesDtoSchema,
+});
+
+export const DeviceDtoSchema = z.object({
+  ...SimpleDeviceDtoSchema.shape,
   methods: DeviceMethodSchema.array(),
 });
 
 export const DeviceWithCredentialsDtoSchema = z.object({
-  id: z.string(),
-  createdAt: zDate(),
-  properties: DevicePropertiesDtoSchema,
+  ...SimpleDeviceDtoSchema.shape,
   mqtt: z.object({
     uri: z.string(),
     ca: z.string(),

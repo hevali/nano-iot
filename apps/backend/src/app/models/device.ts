@@ -6,7 +6,9 @@ import {
 } from '@nano-iot/common';
 import { createZodDto } from 'nestjs-zod';
 
-export class DeviceMethodDto extends createZodDto(DeviceMethodSchema) {}
-export class DeviceDto extends createZodDto(DeviceDtoSchema) {}
-export class DeviceWithCredentialsDto extends createZodDto(DeviceWithCredentialsDtoSchema) {}
-export class CreateDeviceDto extends createZodDto(CreateDeviceDtoSchema) {}
+export class DeviceMethodDto extends createZodDto(DeviceMethodSchema, { codec: true }) {}
+export class DeviceDto extends createZodDto(DeviceDtoSchema, { codec: true }) {}
+export class DeviceWithCredentialsDto extends createZodDto(DeviceWithCredentialsDtoSchema, {
+  codec: true,
+}) {}
+export class CreateDeviceDto extends createZodDto(CreateDeviceDtoSchema, { codec: true }) {}

@@ -1,4 +1,11 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  LOG_LEVELS,
+  LogLevel,
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { MqttModule } from './mqtt/mqtt.module';
@@ -17,8 +24,8 @@ import { CONFIG_SCHEMA, TypedConfigService } from './lib/config';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { AgentModule } from './agent/agent.module';
 import { AuthMiddleware, AuthModule } from './auth';
-import { McpModule, McpTransportType } from '@rekog/mcp-nest';
 import { BasicAuthGuard } from './lib/guards';
+import { McpModule, McpOptions } from '@rekog/mcp-nest';
 
 @Module({
   imports: [
@@ -50,16 +57,28 @@ import { BasicAuthGuard } from './lib/guards';
       },
       inject: [ConfigService],
     }),
-    McpModule.forRoot({
-      name: 'nano-iot-mcp-server',
-      version: '0.0.1',
-      instructions: 'Nano IoT MCP Server.\n\nUse this MCP server to manage your devices remotely.',
-      transport: [McpTransportType.STREAMABLE_HTTP],
-      guards: [BasicAuthGuard],
-      capabilities: {
-        tools: { listChanged: false },
-        resources: { listChanged: false },
+    McpModule.forRootAsync({
+      useFactory: (config: TypedConfigService) => {
+        const logLevel = config.getOrThrow<LogLevel>('LOG_LEVEL');
+        const level = logLevel === 'fatal' ? 'error' : logLevel;
+
+        return {
+          name: 'nano-iot-mcp-server',
+          version: '0.0.1',
+          instructions:
+            'Nano IoT MCP Server.\n\nUse this MCP server to manage your devices remotely.',
+          guards: [BasicAuthGuard],
+          capabilities: {
+            tools: { listChanged: false },
+            resources: { listChanged: false },
+          },
+          // Index 5 = fatal which is not supported by this library.
+          logging: {
+            level: LOG_LEVELS.slice(LOG_LEVELS.indexOf(level), 5),
+          } as McpOptions['logging'],
+        };
       },
+      inject: [ConfigService],
     }),
     AuthModule,
     MqttModule,
@@ -99,7 +118,7 @@ export class AppModule implements NestModule {
         { path: '/auth/login', method: RequestMethod.POST },
         { path: '/auth/logout', method: RequestMethod.GET },
         { path: '/mcp', method: RequestMethod.ALL },
-        { path: '/a2a/*', method: RequestMethod.ALL }
+        { path: '/a2a/*path', method: RequestMethod.ALL }
       )
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }

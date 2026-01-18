@@ -8,8 +8,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
-import { ZodSerializationException } from 'nestjs-zod';
+import { HttpAdapterHost } from '@nestjs/core';
+import { ZodSerializationException, ZodValidationException } from 'nestjs-zod';
 import { EntityNotFoundError, QueryFailedError, TypeORMError } from 'typeorm';
 import { ZodError } from 'zod';
 
@@ -18,7 +18,7 @@ function isMqttContext(host: ArgumentsHost) {
 }
 
 @Catch()
-export class AnyExceptionFilter implements ExceptionFilter {
+export class AnyExceptionFilter<T = unknown> implements ExceptionFilter<T> {
   private logger = new Logger(AnyExceptionFilter.name);
 
   constructor(private readonly host: HttpAdapterHost) {}
@@ -28,55 +28,51 @@ export class AnyExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    const { httpAdapter } = this.host;
-
-    const ctx = host.switchToHttp();
-
     const error =
       exception instanceof HttpException
         ? exception
         : new InternalServerErrorException('Unknown error');
-
     if (error instanceof InternalServerErrorException) {
       this.logger.error('Unhandled exception occurred', exception);
     }
 
+    const { httpAdapter } = this.host;
+    const ctx = host.switchToHttp();
     httpAdapter.reply(ctx.getResponse(), error.getResponse(), error.getStatus());
   }
 }
 
-@Catch(HttpException)
-export class ZodErrorFilter extends BaseExceptionFilter {
-  override catch(exception: HttpException, host: ArgumentsHost) {
+type ZodException = ZodError | ZodSerializationException | ZodValidationException;
+
+@Catch(ZodError, ZodSerializationException, ZodValidationException)
+export class ZodErrorFilter extends AnyExceptionFilter<ZodException> {
+  override catch(exception: ZodException, host: ArgumentsHost) {
     if (isMqttContext(host)) {
       return;
     }
 
-    if (exception instanceof ZodSerializationException) {
-      const zodError = exception.getZodError();
-      if (zodError instanceof ZodError) {
-        super.catch(new BadRequestException(zodError.message), host);
-        return;
-      }
+    const zodError = exception instanceof ZodError ? exception : exception.getZodError();
+    if (zodError instanceof ZodError) {
+      super.catch(new BadRequestException(zodError.message), host);
+    } else {
+      super.catch(new BadRequestException(exception.message), host);
     }
-
-    super.catch(exception, host);
   }
 }
 
 @Catch(TypeORMError)
-export class TypeormErrorFilter extends AnyExceptionFilter {
-  override catch(exception: unknown, host: ArgumentsHost): void {
+export class TypeormErrorFilter extends AnyExceptionFilter<TypeORMError> {
+  override catch(exception: TypeORMError, host: ArgumentsHost): void {
     if (isMqttContext(host)) {
       return;
     }
 
-    const error = getHttpError(exception as TypeORMError);
+    const error = toHttpException(exception);
     super.catch(error, host);
   }
 }
 
-export function getHttpError(exception: TypeORMError): HttpException {
+export function toHttpException(exception: TypeORMError): HttpException {
   if (exception instanceof QueryFailedError) {
     return new BadRequestException('Invalid request');
   } else if (exception instanceof EntityNotFoundError) {

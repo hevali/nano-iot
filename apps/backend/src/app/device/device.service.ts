@@ -52,7 +52,7 @@ export class DeviceService {
   @McpTool({
     name: 'get-device',
     description: 'Get a device by ID',
-    parameters: z.object({ id: z.string({ description: 'The ID of the device' }) }),
+    parameters: z.object({ id: z.string().describe('The ID of the device') }),
     outputSchema: DeviceDtoSchema,
   })
   async getDevice(id: string | { id: string }) {
@@ -84,7 +84,7 @@ export class DeviceService {
   @McpTool({
     name: 'delete-device',
     description: 'Deletes a device with the given ID',
-    parameters: z.object({ id: z.string({ description: 'The ID of the device' }) }),
+    parameters: z.object({ id: z.string().describe('The ID of the device') }),
     annotations: {
       destructiveHint: true,
     },

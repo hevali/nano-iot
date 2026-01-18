@@ -8,7 +8,7 @@ import {
 } from '@rekog/mcp-nest';
 import { TypeORMError } from 'typeorm';
 import { HttpException, InternalServerErrorException } from '@nestjs/common';
-import { getHttpError } from './filters';
+import { toHttpException } from './filters';
 
 export function McpTool(options: ToolOptions) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,7 +20,7 @@ export function McpTool(options: ToolOptions) {
         return await originalMethod.apply(this, args);
       } catch (e) {
         if (e instanceof TypeORMError) {
-          throw getHttpError(e);
+          throw toHttpException(e);
         } else if (e instanceof HttpException) {
           throw e;
         }
@@ -76,17 +76,14 @@ export function McpJSONResourceTemplate(options: Omit<ResourceTemplateOptions, '
 
 function toMcpJSONResponse(uri: string, payload: object) {
   if (payload instanceof Error) {
-    const error = payload instanceof TypeORMError ? getHttpError(payload) : payload;
+    const ex = payload instanceof TypeORMError ? toHttpException(payload) : payload;
+    const error = ex instanceof HttpException ? ex.message : 'Unknown error';
     return {
       contents: [
         {
           uri,
           mimeType: 'application/json',
-          text: JSON.stringify(
-            { error: error instanceof HttpException ? error.message : 'Unknown error' },
-            null,
-            2
-          ),
+          text: JSON.stringify({ error }),
         },
       ],
     };
@@ -97,7 +94,7 @@ function toMcpJSONResponse(uri: string, payload: object) {
       {
         uri,
         mimeType: 'application/json',
-        text: JSON.stringify(payload, null, 2),
+        text: JSON.stringify(payload),
       },
     ],
   };
