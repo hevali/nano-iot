@@ -1,4 +1,6 @@
 import {
+  McpSseService,
+  McpStreamableHttpService,
   Resource,
   ResourceOptions,
   ResourceTemplate,
@@ -7,8 +9,21 @@ import {
   ToolOptions,
 } from '@rekog/mcp-nest';
 import { TypeORMError } from 'typeorm';
-import { HttpException, InternalServerErrorException } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  InternalServerErrorException,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { toHttpException } from './filters';
+import { BasicAuthGuard } from './guards';
 
 export function McpTool(options: ToolOptions) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,4 +113,41 @@ function toMcpJSONResponse(uri: string, payload: object) {
       },
     ],
   };
+}
+
+@Controller()
+@UseGuards(BasicAuthGuard)
+export class McpController {
+  constructor(
+    private mcpStreamableHttpService: McpStreamableHttpService,
+    private mcpSseService: McpSseService
+  ) {}
+
+  @Post('/mcp')
+  async handlePostRequest(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: unknown
+  ): Promise<void> {
+    await this.mcpStreamableHttpService.handlePostRequest(req, res, body);
+  }
+
+  @Get('/mcp')
+  async handleGetRequest(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.mcpStreamableHttpService.handleGetRequest(req, res);
+  }
+
+  @Delete('/mcp')
+  async handleDeleteRequest(@Req() req: Request, @Res() res: Response): Promise<void> {
+    await this.mcpStreamableHttpService.handleDeleteRequest(req, res);
+  }
+
+  @Post('/sse')
+  async handleSseRequest(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: unknown
+  ): Promise<void> {
+    await this.mcpSseService.handleMessage(req, res, body);
+  }
 }

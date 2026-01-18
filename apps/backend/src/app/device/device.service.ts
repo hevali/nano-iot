@@ -17,14 +17,18 @@ import {
 import { MqttService } from '../mqtt/mqtt.service';
 import { RpcService } from '../mqtt/rpc.service';
 import { z } from 'zod';
+import { RpcParams } from 'jsonrpc-lite';
 import { McpTool } from '../lib/mcp';
+
+const ObjectSchema = z.custom((data) => typeof data === 'object' && data !== null);
+ObjectSchema._zod.toJSONSchema = () => z.toJSONSchema(z.object());
 
 const CallDeviceMethodDtoSchema = z.object({
   deviceId: z.string().describe('The ID of the device'),
   method: z.string().describe('The name of the method to call'),
   params: z
-    .union([z.object({}), z.array(z.any())])
-    .describe('The parameters to pass to the method'),
+    .union([ObjectSchema, z.array(z.any())])
+    .describe('The parameters to pass to the method') as z.core.$ZodType<RpcParams>,
 });
 export type CallDeviceMethodDto = z.infer<typeof CallDeviceMethodDtoSchema>;
 

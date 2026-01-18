@@ -26,6 +26,7 @@ import { AgentModule } from './agent/agent.module';
 import { AuthMiddleware, AuthModule } from './auth';
 import { BasicAuthGuard } from './lib/guards';
 import { McpModule, McpOptions } from '@rekog/mcp-nest';
+import { McpController } from './lib/mcp';
 
 @Module({
   imports: [
@@ -67,7 +68,6 @@ import { McpModule, McpOptions } from '@rekog/mcp-nest';
           version: '0.0.1',
           instructions:
             'Nano IoT MCP Server.\n\nUse this MCP server to manage your devices remotely.',
-          guards: [BasicAuthGuard],
           capabilities: {
             tools: { listChanged: false },
             resources: { listChanged: false },
@@ -108,6 +108,7 @@ import { McpModule, McpOptions } from '@rekog/mcp-nest';
     },
     BasicAuthGuard,
   ],
+  controllers: [McpController],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

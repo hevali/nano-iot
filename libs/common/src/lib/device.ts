@@ -22,6 +22,7 @@ const zDate = z.codec(z.union([z.iso.datetime(), z.date()]), z.date(), {
 zDate._zod.toJSONSchema = () => z.toJSONSchema(z.iso.datetime());
 
 export const DevicePropertiesDtoSchema = z.record(z.string(), z.any());
+DevicePropertiesDtoSchema._zod.toJSONSchema = () => z.toJSONSchema(z.object());
 
 export const DeviceMethodSchema = z.object({
   name: z.string(),
