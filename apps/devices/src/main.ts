@@ -30,7 +30,11 @@ const DEVICE_REGISTRY: Record<string, (id: string) => IoTDevice> = {
 };
 
 function parseArgs(): Config {
-  const args = process.argv.slice(2);
+  const args = process.argv
+    .slice(2)
+    .join(' ')
+    .split(' ')
+    .filter((arg) => arg.length > 0);
   const config: Partial<Config> = {};
 
   // Set defaults from environment variables
@@ -123,16 +127,19 @@ async function main() {
 
     const client = await connectAsync(config.brokerUrl, { ...config.options, ...auth });
     await device.init(client);
+    device.startSimulation();
 
     // Handle graceful shutdown
     process.on('SIGTERM', () => {
       console.log('SIGTERM received, shutting down gracefully...');
+      device.stopSimulation();
       client.end();
       process.exit(0);
     });
 
     process.on('SIGINT', () => {
       console.log('SIGINT received, shutting down gracefully...');
+      device.stopSimulation();
       client.end();
       process.exit(0);
     });

@@ -11,12 +11,22 @@ export interface IoTDeviceOptions {
     }
   >;
   properties: Record<string, unknown>;
+  configuration?: Record<string, unknown>;
 }
 
 export abstract class IoTDevice {
-  constructor(protected options: IoTDeviceOptions) {}
+  protected properties: Record<string, unknown>;
+  protected configuration: Record<string, unknown>;
+  private client: MqttClient | null = null;
+  private simulationInterval: NodeJS.Timeout | null = null;
+
+  constructor(protected options: IoTDeviceOptions) {
+    this.properties = { ...options.properties };
+    this.configuration = { ...options.configuration };
+  }
 
   async init(client: MqttClient) {
+    this.client = client;
     const methods: IoTDeviceOptions['methods'] = {
       ...this.options.methods,
       ping: {
@@ -75,6 +85,8 @@ export abstract class IoTDevice {
         }
       } else if (topic === `iot/devices/${this.options.id}/configuration`) {
         console.log('Received configuration update:', payload);
+        this.configuration = { ...this.configuration, ...payload };
+        await this.onConfigurationChange(payload);
       } else {
         console.warn('Unhandled topic:', topic);
       }
@@ -83,10 +95,7 @@ export abstract class IoTDevice {
     await client.subscribeAsync(`iot/devices/${this.options.id}/rpc/request`);
     await client.subscribeAsync(`iot/devices/${this.options.id}/configuration`);
 
-    await client.publishAsync(
-      `iot/devices/${this.options.id}/properties`,
-      JSON.stringify(this.options.properties),
-    );
+    await this.reportProperties(this.properties);
 
     await client.publishAsync(
       `iot/devices/${this.options.id}/rpc/supported`,
@@ -96,5 +105,35 @@ export abstract class IoTDevice {
         }, [] as DeviceMethodDto[]),
       ),
     );
+  }
+
+  protected async reportProperties(patch: Record<string, unknown>) {
+    this.properties = { ...this.properties, ...patch };
+    if (this.client) {
+      await this.client.publishAsync(
+        `iot/devices/${this.options.id}/properties`,
+        JSON.stringify(this.properties),
+      );
+    }
+  }
+
+  protected abstract onConfigurationChange(patch: Record<string, unknown>): Promise<void>;
+
+  protected abstract simulate(): Promise<void>;
+
+  startSimulation(intervalMs = 5000) {
+    if (this.simulationInterval) {
+      clearInterval(this.simulationInterval);
+    }
+    this.simulationInterval = setInterval(() => this.simulate(), intervalMs);
+    console.log(`Simulation started for ${this.options.id} with interval ${intervalMs}ms`);
+  }
+
+  stopSimulation() {
+    if (this.simulationInterval) {
+      clearInterval(this.simulationInterval);
+      this.simulationInterval = null;
+      console.log(`Simulation stopped for ${this.options.id}`);
+    }
   }
 }

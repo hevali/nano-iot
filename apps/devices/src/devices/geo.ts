@@ -6,9 +6,7 @@ export interface GeoLocation {
 }
 
 export class GeoDevice extends IoTDevice {
-  private location: GeoLocation = { latitude: 0, longitude: 0 };
   private locationHistory: Array<{ timestamp: Date; location: GeoLocation }> = [];
-  private geofenceRadius = 1000; // meters
 
   constructor(id: string) {
     super({
@@ -65,29 +63,25 @@ export class GeoDevice extends IoTDevice {
           },
           handler: (params: unknown) => this.calculateDistance(params),
         },
-        setGeofence: {
-          definition: {
-            description: 'Enable geofencing with specified radius in meters',
-            definition: {
-              params: { type: 'object', properties: { radius: { type: 'number' } } },
-              result: { type: 'string' },
-            },
-          },
-          handler: (params: unknown) => this.setGeofence(params),
-        },
       },
       properties: {
         name: 'Geo Device',
         description: 'IoT device that tracks and reports geographic location',
         geofenceEnabled: false,
+        latitude: 0,
+        longitude: 0,
+      },
+      configuration: {
+        geofenceRadius: 1000,
+        simulateMovement: true, // New config to enable/disable random walk
       },
     });
   }
 
   private async getLocation(): Promise<GeoLocation> {
     return {
-      latitude: parseFloat(this.location.latitude.toFixed(6)),
-      longitude: parseFloat(this.location.longitude.toFixed(6)),
+      latitude: this.properties['latitude'] as number,
+      longitude: this.properties['longitude'] as number,
     };
   }
 
@@ -106,11 +100,11 @@ export class GeoDevice extends IoTDevice {
 
         this.locationHistory.push({
           timestamp: new Date(),
-          location: this.location,
+          location: { latitude: lat, longitude: lon },
         });
 
-        this.location = { latitude: lat, longitude: lon };
-        console.log(`Location updated to ${this.location.latitude}, ${this.location.longitude}`);
+        await this.reportProperties({ latitude: lat, longitude: lon });
+        console.log(`Location updated to ${lat}, ${lon}`);
         return `Location updated to ${lat}, ${lon}`;
       }
     }
@@ -139,15 +133,17 @@ export class GeoDevice extends IoTDevice {
     if (params && typeof params === 'object' && 'latitude' in params && 'longitude' in params) {
       const targetLat = (params as Record<string, unknown>).latitude;
       const targetLon = (params as Record<string, unknown>).longitude;
+      const currentLat = this.properties['latitude'] as number;
+      const currentLon = this.properties['longitude'] as number;
 
       if (typeof targetLat === 'number' && typeof targetLon === 'number') {
         // Haversine formula for calculating distance between two points
         const earthRadiusKm = 6371;
-        const dLat = this.toRad(targetLat - this.location.latitude);
-        const dLon = this.toRad(targetLon - this.location.longitude);
+        const dLat = this.toRad(targetLat - currentLat);
+        const dLon = this.toRad(targetLon - currentLon);
         const a =
           Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(this.toRad(this.location.latitude)) *
+          Math.cos(this.toRad(currentLat)) *
             Math.cos(this.toRad(targetLat)) *
             Math.sin(dLon / 2) *
             Math.sin(dLon / 2);
@@ -159,16 +155,36 @@ export class GeoDevice extends IoTDevice {
     throw new Error('Invalid location parameters provided');
   }
 
-  private async setGeofence(params: unknown): Promise<string> {
-    if (params && typeof params === 'object' && 'radius' in params) {
-      const radius = (params as Record<string, unknown>).radius;
-      if (typeof radius === 'number' && radius > 0) {
-        this.geofenceRadius = radius;
-        console.log(`Geofence enabled with radius ${this.geofenceRadius}m`);
-        return `Geofence enabled with radius ${this.geofenceRadius} meters`;
+  protected override async simulate(): Promise<void> {
+      if (this.configuration['simulateMovement']) {
+          // Random walk: move slightly
+          const lat = this.properties['latitude'] as number;
+          const lon = this.properties['longitude'] as number;
+          
+          // Approx 111km per degree. 0.0001 deg is ~11 meters.
+          const dLat = (Math.random() - 0.5) * 0.0002; 
+          const dLon = (Math.random() - 0.5) * 0.0002;
+          
+          const newLat = parseFloat((lat + dLat).toFixed(6));
+          const newLon = parseFloat((lon + dLon).toFixed(6));
+          
+           // Update location
+          this.locationHistory.push({
+            timestamp: new Date(),
+            location: { latitude: newLat, longitude: newLon },
+          });
+          
+          await this.reportProperties({ latitude: newLat, longitude: newLon });
       }
+  }
+  
+  protected override async onConfigurationChange(patch: Record<string, unknown>): Promise<void> {
+    if ('geofenceRadius' in patch) {
+        // Just update property if needed, but 'geofenceEnabled' is logic based.
+        const radius = patch['geofenceRadius'] as number;
+        await this.reportProperties({ geofenceEnabled: radius > 0 });
+        console.log(`Geofence radius set to ${radius}m`);
     }
-    throw new Error('Invalid geofence radius provided');
   }
 
   private toRad(degrees: number): number {

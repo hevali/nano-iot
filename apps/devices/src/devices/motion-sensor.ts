@@ -1,11 +1,6 @@
 import { IoTDevice } from './base';
 
 export class MotionSensor extends IoTDevice {
-  private motionDetected = false;
-  private lastMotionTime: Date | null = null;
-  private detectionCount = 0;
-  private sensitivity = 50; // 0-100
-
   constructor(id: string) {
     super({
       id,
@@ -18,25 +13,6 @@ export class MotionSensor extends IoTDevice {
             },
           },
           handler: () => this.detectMotion(),
-        },
-        getStatus: {
-          definition: {
-            description: 'Get detailed motion sensor status',
-            definition: {
-              result: { type: 'object' },
-            },
-          },
-          handler: () => this.getStatus(),
-        },
-        setSensitivity: {
-          definition: {
-            description: 'Set the sensor sensitivity level (0-100)',
-            definition: {
-              params: { type: 'object', properties: { level: { type: 'number' } } },
-              result: { type: 'string' },
-            },
-          },
-          handler: (params: unknown) => this.setSensitivity(params),
         },
         reset: {
           definition: {
@@ -53,63 +29,81 @@ export class MotionSensor extends IoTDevice {
         description: 'IoT device that detects motion and presence',
         type: 'PIR',
         range: '5-7 meters',
+        motionDetected: false,
+        lastMotionTime: null,
+        detectionCount: 0,
+      },
+      configuration: {
+        sensitivity: 50,
       },
     });
   }
 
   private async detectMotion(): Promise<boolean> {
-    // Simulate motion detection based on sensitivity
-    const randomChance = Math.random();
-    const threshold = (100 - this.sensitivity) / 100;
-
-    if (randomChance > threshold) {
-      this.motionDetected = true;
-      this.lastMotionTime = new Date();
-      this.detectionCount++;
-    } else {
-      // Motion stops after a short time (simulated)
-      if (this.lastMotionTime && new Date().getTime() - this.lastMotionTime.getTime() > 2000) {
-        this.motionDetected = false;
-      }
-    }
-
-    return this.motionDetected;
-  }
-
-  private async getStatus(): Promise<{
-    motionDetected: boolean;
-    lastMotionTime: string | null;
-    detectionCount: number;
-    sensitivity: number;
-  }> {
-    return {
-      motionDetected: this.motionDetected,
-      lastMotionTime: this.lastMotionTime ? this.lastMotionTime.toISOString() : null,
-      detectionCount: this.detectionCount,
-      sensitivity: this.sensitivity,
-    };
-  }
-
-  private async setSensitivity(params: unknown): Promise<string> {
-    if (params && typeof params === 'object' && 'level' in params) {
-      const level = (params as Record<string, unknown>).level;
-      if (typeof level === 'number') {
-        if (level < 0 || level > 100) {
-          throw new Error('Sensitivity level must be between 0 and 100');
-        }
-        this.sensitivity = level;
-        console.log(`Motion sensor sensitivity set to ${this.sensitivity}%`);
-        return `Sensitivity updated to ${this.sensitivity}%`;
-      }
-    }
-    throw new Error('Invalid sensitivity level provided');
+    return this.properties['motionDetected'] as boolean;
   }
 
   private async reset(): Promise<string> {
-    this.motionDetected = false;
-    this.lastMotionTime = null;
-    this.detectionCount = 0;
+    await this.reportProperties({
+      motionDetected: false,
+      lastMotionTime: null,
+      detectionCount: 0,
+    });
     console.log('Motion sensor reset');
     return 'Motion sensor state reset successfully';
+  }
+
+  protected override async simulate(): Promise<void> {
+    const sensitivity = (this.configuration['sensitivity'] as number) || 50;
+    const motionDetected = this.properties['motionDetected'] as boolean;
+    const detectionCount = this.properties['detectionCount'] as number;
+
+    // Logic: If motion is not detected, random chance to detect.
+    // If motion IS detected, check if it should stop (timeout).
+
+    if (!motionDetected) {
+      const randomChance = Math.random();
+      // Higher sensitivity = lower threshold to trigger
+      // Sensitivity 0-100.
+      // If sensitivity is 100, threshold is 0 -> always trigger? No, that's too much noise.
+      // Let's say max sensitivity means 50% chance per tick?
+      // Old logic: threshold = (100 - sensitivity) / 100.
+      // If sens=50, th=0.5. Chance > 0.5.
+      // If sens=100, th=0. Chance > 0 (Always).
+      // If sens=0, th=1. Chance > 1 (Never).
+      // Since simulate runs every 5s, we might want lower probability.
+      // Let's scale it.
+
+      const threshold = 0.8 + ((100 - sensitivity) / 100) * 0.2;
+      // If sens=100, th=0.8. 20% chance.
+      // If sens=0, th=1.0. 0% chance.
+      // If sens=50, th=0.9. 10% chance.
+
+      if (randomChance > threshold) {
+        await this.reportProperties({
+          motionDetected: true,
+          lastMotionTime: new Date().toISOString(),
+          detectionCount: detectionCount + 1,
+        });
+        console.log('Motion detected!');
+      }
+    } else {
+      // Motion is currently detected.
+      // Reset after 2 seconds? The loop is 5s (default).
+      // So if it was detected in previous tick, it should probably clear now unless we want to sustain it.
+      // Let's assume it clears if simulated time passed.
+      // Since simulation interval is likely > 2s, we can just clear it if it was set.
+
+      await this.reportProperties({
+        motionDetected: false,
+      });
+      // console.log('Motion stopped.');
+    }
+  }
+
+  protected override async onConfigurationChange(patch: Record<string, unknown>): Promise<void> {
+    if ('sensitivity' in patch) {
+      console.log(`Motion sensor sensitivity set to ${patch['sensitivity']}%`);
+    }
   }
 }
