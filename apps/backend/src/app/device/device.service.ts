@@ -64,6 +64,12 @@ export class DeviceService {
     description: 'Get a device by ID',
     parameters: z.object({ id: z.string().describe('The ID of the device') }),
     outputSchema: DeviceDtoSchema,
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   })
   async getDevice(id: string | { id: string }) {
     const deviceId = typeof id === 'string' ? id : id.id;
@@ -79,6 +85,12 @@ export class DeviceService {
     description: 'Creates a new device with the given ID',
     parameters: CreateDeviceDtoSchema,
     outputSchema: DeviceWithCredentialsDtoSchema,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
   })
   async createDevice(dto: CreateDeviceDto) {
     const existing = await this.deviceRepo.findOneBy({ id: dto.id });
@@ -96,7 +108,10 @@ export class DeviceService {
     description: 'Deletes a device with the given ID',
     parameters: z.object({ id: z.string().describe('The ID of the device') }),
     annotations: {
+      readOnlyHint: false,
       destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   })
   async deleteDevice(id: string | { id: string }) {
@@ -115,6 +130,12 @@ export class DeviceService {
     description: 'Set configuration of a device with the given ID',
     parameters: SetDeviceConfigurationDtoSchema,
     outputSchema: DevicePropertiesDtoSchema,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   })
   async setDeviceConfiguration(dto: SetDeviceConfigurationDto) {
     const device = await this.deviceRepo.findOneOrFail({
@@ -133,6 +154,12 @@ export class DeviceService {
     description: 'Set tags of a device with the given ID',
     parameters: SetDeviceTagsDtoSchema,
     outputSchema: DevicePropertiesDtoSchema,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   })
   async setDeviceTags(dto: SetDeviceTagsDto) {
     const device = await this.deviceRepo.findOneOrFail({
@@ -160,6 +187,13 @@ export class DeviceService {
     name: 'call-device-method',
     description: 'Invoke a device method',
     parameters: CallDeviceMethodDtoSchema,
+    outputSchema: z.any().describe('The result of the device method call'),
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
   })
   async callDeviceMethod(dto: CallDeviceMethodDto) {
     const device = await this.deviceRepo.findOneOrFail({
