@@ -17,6 +17,7 @@ import {
   Get,
   HttpException,
   InternalServerErrorException,
+  OnModuleInit,
   Post,
   Req,
   Res,
@@ -24,6 +25,7 @@ import {
 } from '@nestjs/common';
 import { toHttpException } from './filters';
 import { BasicAuthGuard } from './guards';
+import { ApplicationConfig } from '@nestjs/core';
 
 export function McpTool(options: ToolOptions) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -117,11 +119,16 @@ function toMcpJSONResponse(uri: string, payload: object) {
 
 @Controller()
 @UseGuards(BasicAuthGuard)
-export class McpController {
+export class McpController implements OnModuleInit {
   constructor(
     private mcpStreamableHttpService: McpStreamableHttpService,
     private mcpSseService: McpSseService,
+    private applicationConfig: ApplicationConfig,
   ) {}
+
+  onModuleInit() {
+    this.mcpSseService.initialize();
+  }
 
   @Post('/mcp')
   async handlePostRequest(
@@ -142,12 +149,18 @@ export class McpController {
     await this.mcpStreamableHttpService.handleDeleteRequest(req, res);
   }
 
-  @Post('/sse')
-  async handleSseRequest(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() body: unknown,
-  ): Promise<void> {
+  @Get('/sse')
+  async sse(@Req() req: Request, @Res() res: Response) {
+    return this.mcpSseService.createSseConnection(
+      req,
+      res,
+      'messages',
+      this.applicationConfig.getGlobalPrefix() || '',
+    );
+  }
+
+  @Post('/messages')
+  async messages(@Req() req: Request, @Res() res: Response, @Body() body: unknown): Promise<void> {
     await this.mcpSseService.handleMessage(req, res, body);
   }
 }
