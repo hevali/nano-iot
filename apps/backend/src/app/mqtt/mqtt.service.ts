@@ -114,7 +114,7 @@ export class MqttServerService implements OnModuleInit {
         cb(null);
       } else {
         this.logger.warn(
-          `Client ${clientId} is not authorzied to publish to topic ${packet.topic}`,
+          `Client ${clientId} is not authorized to publish to topic ${packet.topic}`,
         );
         cb(new Error('Topic not allowed'));
       }
@@ -128,7 +128,7 @@ export class MqttServerService implements OnModuleInit {
         this.logger.debug(`Client ${clientId} subscribing to topic ${sub.topic}`);
         cb(null, sub);
       } else {
-        this.logger.warn(`Client ${clientId} is not authorzied to subscribe to topic ${sub.topic}`);
+        this.logger.warn(`Client ${clientId} is not authorized to subscribe to topic ${sub.topic}`);
         cb(new Error('Topic not allowed'), sub);
       }
     };
