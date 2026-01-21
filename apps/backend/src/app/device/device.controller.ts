@@ -1,10 +1,16 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
 import { DeviceService } from './device.service';
-import { ApiBody, ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
+import { ApiNoContentResponse, ApiTags } from '@nestjs/swagger';
 import { DeviceMethodSchema, DevicePropertiesDtoSchema } from '@nano-iot/common';
 import { ZodResponse, ZodValidationPipe } from 'nestjs-zod';
 import { JsonMqttPayload, JsonMqttSubscribe, JsonMqttTopic } from '../mqtt/rpc.decorator';
-import { CreateDeviceDto, DeviceDto, DeviceMethodDto, DeviceWithCredentialsDto } from '../models';
+import {
+  CreateDeviceDto,
+  DeviceDto,
+  DeviceMethodDto,
+  DevicePropertiesDto,
+  DeviceWithCredentialsDto,
+} from '../models';
 
 @Controller('devices')
 @ApiTags('Devices')
@@ -37,22 +43,55 @@ export class DeviceController {
   }
 
   @Get(':id/properties')
+  @ZodResponse({ type: DevicePropertiesDto })
   async getDeviceProperties(@Param('id') id: string) {
     const device = await this.deviceService.getDevice(id);
     return device.properties;
   }
 
-  @Put(':id/properties')
-  @ApiBody({ type: Object })
-  async updateDeviceProperties(
-    @Param('id') id: string,
-    @Body() properties: Record<string, unknown>,
-  ) {
-    const props = await this.deviceService.setDeviceProperties({ deviceId: id, properties });
-    return props;
+  @Get(':id/configuration')
+  @ZodResponse({ type: DevicePropertiesDto })
+  async getDeviceConfiguration(@Param('id') id: string) {
+    const device = await this.deviceService.getDevice(id);
+    return device.configuration;
   }
 
-  @JsonMqttSubscribe('iot/devices/+/properties/reported')
+  @Put(':id/configuration')
+  @ZodResponse({ type: DevicePropertiesDto })
+  async updateDeviceConfiguration(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(DevicePropertiesDtoSchema))
+    configuration: Record<string, unknown>,
+  ) {
+    const config = await this.deviceService.setDeviceConfiguration({
+      deviceId: id,
+      configuration,
+    });
+    return config;
+  }
+
+  @Get(':id/tags')
+  @ZodResponse({ type: DevicePropertiesDto })
+  async getDeviceTags(@Param('id') id: string) {
+    const device = await this.deviceService.getDevice(id);
+    return device.tags;
+  }
+
+  @Put(':id/tags')
+  @ZodResponse({ type: DevicePropertiesDto })
+  async updateDeviceTags(
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(DevicePropertiesDtoSchema))
+    tags: Record<string, unknown>,
+  ) {
+    const result = await this.deviceService.setDeviceTags({
+      deviceId: id,
+      tags,
+    });
+    return result;
+  }
+
+  @JsonMqttSubscribe('iot/devices/+/properties')
   async onDeviceProperties(
     @JsonMqttTopic() topic: string,
     @JsonMqttPayload(new ZodValidationPipe(DevicePropertiesDtoSchema))

@@ -32,11 +32,17 @@ const CallDeviceMethodDtoSchema = z.object({
 });
 export type CallDeviceMethodDto = z.infer<typeof CallDeviceMethodDtoSchema>;
 
-const SetDevicePropertiesDtoSchema = z.object({
+const SetDeviceConfigurationDtoSchema = z.object({
   deviceId: z.string().describe('The ID of the device'),
-  properties: DevicePropertiesDtoSchema.describe('The properties to set on the device'),
+  configuration: DevicePropertiesDtoSchema.describe('The configuration to set on the device'),
 });
-export type SetDevicePropertiesDto = z.infer<typeof SetDevicePropertiesDtoSchema>;
+export type SetDeviceConfigurationDto = z.infer<typeof SetDeviceConfigurationDtoSchema>;
+
+const SetDeviceTagsDtoSchema = z.object({
+  deviceId: z.string().describe('The ID of the device'),
+  tags: DevicePropertiesDtoSchema.describe('The tags to set on the device'),
+});
+export type SetDeviceTagsDto = z.infer<typeof SetDeviceTagsDtoSchema>;
 
 @Injectable()
 export class DeviceService {
@@ -58,6 +64,12 @@ export class DeviceService {
     description: 'Get a device by ID',
     parameters: z.object({ id: z.string().describe('The ID of the device') }),
     outputSchema: DeviceDtoSchema,
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   })
   async getDevice(id: string | { id: string }) {
     const deviceId = typeof id === 'string' ? id : id.id;
@@ -73,6 +85,12 @@ export class DeviceService {
     description: 'Creates a new device with the given ID',
     parameters: CreateDeviceDtoSchema,
     outputSchema: DeviceWithCredentialsDtoSchema,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
   })
   async createDevice(dto: CreateDeviceDto) {
     const existing = await this.deviceRepo.findOneBy({ id: dto.id });
@@ -90,7 +108,10 @@ export class DeviceService {
     description: 'Deletes a device with the given ID',
     parameters: z.object({ id: z.string().describe('The ID of the device') }),
     annotations: {
+      readOnlyHint: false,
       destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   })
   async deleteDevice(id: string | { id: string }) {
@@ -100,29 +121,55 @@ export class DeviceService {
     return {};
   }
 
+  async reportDeviceProperties(id: string, properties: DevicePropertiesDto) {
+    await this.deviceRepo.update({ id }, { properties });
+  }
+
   @McpTool({
-    name: 'set-device-properties',
-    description: 'Set properties of a device with the given ID',
-    parameters: SetDevicePropertiesDtoSchema,
+    name: 'set-device-configuration',
+    description: 'Set configuration of a device with the given ID',
+    parameters: SetDeviceConfigurationDtoSchema,
     outputSchema: DevicePropertiesDtoSchema,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   })
-  async setDeviceProperties(dto: SetDevicePropertiesDto) {
+  async setDeviceConfiguration(dto: SetDeviceConfigurationDto) {
     const device = await this.deviceRepo.findOneOrFail({
       where: { id: dto.deviceId },
       relations: ['methods'],
     });
 
-    await this.deviceRepo.update({ id: dto.deviceId }, { properties: dto.properties });
-    await this.mqttService.publish(
-      `iot/devices/${dto.deviceId}/properties/desired`,
-      dto.properties,
-    );
+    await this.deviceRepo.update({ id: dto.deviceId }, { configuration: dto.configuration });
+    await this.mqttService.publish(`iot/devices/${dto.deviceId}/configuration`, dto.configuration);
 
-    return this.toDeviceDto({ ...device, properties: dto.properties }).properties;
+    return this.toDeviceDto({ ...device, configuration: dto.configuration }).configuration;
   }
 
-  async reportDeviceProperties(id: string, properties: DevicePropertiesDto) {
-    await this.deviceRepo.update({ id }, { properties });
+  @McpTool({
+    name: 'set-device-tags',
+    description: 'Set tags of a device with the given ID',
+    parameters: SetDeviceTagsDtoSchema,
+    outputSchema: DevicePropertiesDtoSchema,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  })
+  async setDeviceTags(dto: SetDeviceTagsDto) {
+    const device = await this.deviceRepo.findOneOrFail({
+      where: { id: dto.deviceId },
+      relations: ['methods'],
+    });
+
+    await this.deviceRepo.update({ id: dto.deviceId }, { tags: dto.tags });
+
+    return this.toDeviceDto({ ...device, tags: dto.tags }).tags;
   }
 
   async reportDeviceMethods(id: string, methods: DeviceMethodDto[]) {
@@ -140,7 +187,13 @@ export class DeviceService {
     name: 'call-device-method',
     description: 'Invoke a device method',
     parameters: CallDeviceMethodDtoSchema,
-    outputSchema: z.any(),
+    outputSchema: z.any().describe('The result of the device method call'),
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
   })
   async callDeviceMethod(dto: CallDeviceMethodDto) {
     const device = await this.deviceRepo.findOneOrFail({
