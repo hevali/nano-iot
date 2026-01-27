@@ -1,8 +1,3 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { CertificateService, Credentials } from '../mqtt/certificate.service';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DeviceEntity, DeviceMethodEntity } from './device.entity';
-import { Repository } from 'typeorm';
 import {
   type CreateDeviceDto,
   CreateDeviceDtoSchema,
@@ -14,11 +9,17 @@ import {
   DeviceWithCredentialsDto,
   DeviceWithCredentialsDtoSchema,
 } from '@nano-iot/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { RpcParams } from 'jsonrpc-lite';
+import { Repository } from 'typeorm';
+import { z } from 'zod';
+
+import { McpTool } from '../lib/mcp';
+import { CertificateService, Credentials } from '../mqtt/certificate.service';
 import { MqttService } from '../mqtt/mqtt.service';
 import { RpcService } from '../mqtt/rpc.service';
-import { z } from 'zod';
-import { RpcParams } from 'jsonrpc-lite';
-import { McpTool } from '../lib/mcp';
+import { DeviceEntity, DeviceMethodEntity } from './device.entity';
 
 const ObjectSchema = z.custom((data) => typeof data === 'object' && data !== null);
 ObjectSchema._zod.toJSONSchema = () => z.toJSONSchema(z.object());

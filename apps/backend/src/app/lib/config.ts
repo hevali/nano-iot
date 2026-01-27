@@ -1,7 +1,7 @@
 import { LOG_LEVELS } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
-import { z } from 'zod';
 import * as path from 'path';
+import { z } from 'zod';
 
 export const CONFIG_SCHEMA = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

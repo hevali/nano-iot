@@ -1,7 +1,8 @@
 import { Controller } from '@nestjs/common';
-import { AgentService } from './agent.service';
-import { JsonMqttRawPayload, JsonMqttSubscribe, JsonMqttTopic } from '../mqtt/rpc.decorator';
+
 import { MqttService } from '../mqtt/mqtt.service';
+import { JsonMqttRawPayload, JsonMqttSubscribe, JsonMqttTopic } from '../mqtt/rpc.decorator';
+import { AgentService } from './agent.service';
 
 @Controller('agents')
 export class AgentController {

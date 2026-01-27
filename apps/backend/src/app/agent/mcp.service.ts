@@ -1,5 +1,5 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
 import { MultiServerMCPClient } from '@langchain/mcp-adapters';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 
 @Injectable()
 export class McpService implements OnModuleInit {

@@ -1,4 +1,5 @@
 import axios, { type CreateAxiosDefaults } from 'axios';
+
 import router from '../router';
 
 const DEFAULT_AXIOS_CONFIG: CreateAxiosDefaults = {

@@ -1,14 +1,15 @@
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AgentService } from './agent.service';
-import { DeviceModule } from '../device/device.module';
-import { AgentController } from './agent.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ChatEntity, ChatMessageEntity } from './chat.entity';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+
+import { DeviceModule } from '../device/device.module';
 import { TypedConfigService } from '../lib/config';
-import { McpService } from './mcp.service';
 import { A2AExecutor } from './a2a';
+import { AgentController } from './agent.controller';
+import { AgentService } from './agent.service';
+import { ChatEntity, ChatMessageEntity } from './chat.entity';
+import { McpService } from './mcp.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ChatEntity, ChatMessageEntity]), DeviceModule],

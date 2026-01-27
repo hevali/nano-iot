@@ -1,11 +1,13 @@
 import nx from '@nx/eslint-plugin';
-import jsoncParser from 'jsonc-eslint-parser';
 import eslintConfigPrettier from 'eslint-config-prettier/flat';
+import simpleImportSort from "eslint-plugin-simple-import-sort";
+import jsoncParser from 'jsonc-eslint-parser';
 
 export default [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
   ...nx.configs['flat/javascript'],
+  eslintConfigPrettier,
   {
     files: ['**/*.json'],
     languageOptions: {
@@ -48,7 +50,12 @@ export default [
       '**/*.mjs',
     ],
     // Override or add rules here
-    rules: {},
+    plugins: {
+      "simple-import-sort": simpleImportSort,
+    },
+    rules: {
+      "simple-import-sort/imports": "error",
+      "simple-import-sort/exports": "error",
+    },
   },
-  eslintConfigPrettier,
 ];

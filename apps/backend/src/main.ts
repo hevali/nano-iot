@@ -1,21 +1,17 @@
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
-
 import { ConsoleLogger, LOG_LEVELS, Logger, LogLevel } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { AppModule } from './app/app.module';
-import { ConfigService } from '@nestjs/config';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { cleanupOpenApiDoc } from 'nestjs-zod';
-import { Request, Response, NextFunction } from 'express';
-import { TypedConfigService } from './app/lib/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NextFunction, Request, Response } from 'express';
 import session from 'express-session';
-import type { FileStore } from 'session-file-store';
+import { cleanupOpenApiDoc } from 'nestjs-zod';
 import * as path from 'path';
+import type { FileStore } from 'session-file-store';
+
 import { enableA2A } from './app/agent/a2a';
+import { AppModule } from './app/app.module';
+import { TypedConfigService } from './app/lib/config';
 
 const FileStore: FileStore = require('session-file-store')(session);
 

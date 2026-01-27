@@ -1,12 +1,14 @@
 import './styles.css';
-import router from './router';
+
+import { definePreset } from '@primeuix/themes';
+import Lara from '@primeuix/themes/lara';
 import PrimeVue from 'primevue/config';
-import { createApp } from 'vue';
-import App from './app/App.vue';
 import Ripple from 'primevue/ripple';
 import ToastService from 'primevue/toastservice';
-import Lara from '@primeuix/themes/lara';
-import { definePreset } from '@primeuix/themes';
+import { createApp } from 'vue';
+
+import App from './app/App.vue';
+import router from './router';
 
 const app = createApp(App);
 app.use(router);

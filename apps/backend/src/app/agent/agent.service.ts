@@ -1,15 +1,16 @@
-import { DeviceService } from '../device/device.service';
-import { InjectRepository } from '@nestjs/typeorm';
-import { ChatEntity, ChatMessageEntity } from './chat.entity';
-import { Repository } from 'typeorm';
-import { Logger, OnModuleInit, Injectable } from '@nestjs/common';
-import { createAgent, createMiddleware, DynamicStructuredTool, ReactAgent, tool } from 'langchain';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { ClientFactory } from '@a2a-js/sdk/client';
 import { Message } from '@a2a-js/sdk';
-import { z } from 'zod';
-import { randomUUID } from 'crypto';
+import { ClientFactory } from '@a2a-js/sdk/client';
 import { BaseMessage, ChatMessage, HumanMessage } from '@langchain/core/messages';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { randomUUID } from 'crypto';
+import { createAgent, createMiddleware, DynamicStructuredTool, ReactAgent, tool } from 'langchain';
+import { Repository } from 'typeorm';
+import { z } from 'zod';
+
+import { DeviceService } from '../device/device.service';
+import { ChatEntity, ChatMessageEntity } from './chat.entity';
 
 @Injectable()
 export class AgentService implements OnModuleInit {

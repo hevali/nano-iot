@@ -1,3 +1,4 @@
+import { DiscoveryModule } from '@golevelup/nestjs-discovery';
 import {
   Global,
   Inject,
@@ -7,19 +8,17 @@ import {
   OnApplicationShutdown,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-
-import Aedes from 'aedes';
-import { createBroker } from 'aedes';
+import Aedes, { createBroker } from 'aedes';
 import { createServer, Server } from 'aedes-server-factory';
-import { MqttServerService, MqttService } from './mqtt.service';
+import * as https from 'https';
+import { firstValueFrom, skip, throttleTime } from 'rxjs';
+import stoppable from 'stoppable';
+
+import type { TypedConfigService } from '../lib/config';
 import { CertificateService } from './certificate.service';
 import { EchoController } from './echo.controller';
+import { MqttServerService, MqttService } from './mqtt.service';
 import { RpcDiscoveryService, RpcService } from './rpc.service';
-import { DiscoveryModule } from '@golevelup/nestjs-discovery';
-import type { TypedConfigService } from '../lib/config';
-import { firstValueFrom, skip, throttleTime } from 'rxjs';
-import * as https from 'https';
-import stoppable from 'stoppable';
 
 const EXPORTS = [RpcService, CertificateService, MqttService];
 

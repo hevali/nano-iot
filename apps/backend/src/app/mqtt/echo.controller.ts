@@ -1,4 +1,5 @@
 import { BadRequestException, Controller } from '@nestjs/common';
+
 import { MqttJsonRpc, MqttJsonRpcClientId, MqttJsonRpcParams } from './rpc.decorator';
 
 @Controller()

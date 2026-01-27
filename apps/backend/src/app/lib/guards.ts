@@ -6,10 +6,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Request, Response } from 'express';
 import * as bcrypt from 'bcrypt';
-import type { TypedConfigService } from './config';
+import { Request, Response } from 'express';
+
 import { getAuthHeader } from './auth';
+import type { TypedConfigService } from './config';
 
 @Injectable()
 export class BasicAuthGuard implements CanActivate {

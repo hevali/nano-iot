@@ -1,11 +1,12 @@
 import { Controller, Get, Inject, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { ApiExcludeController } from '@nestjs/swagger';
+import * as bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
 import session from 'express-session';
 import { promisify } from 'util';
+
 import type { TypedConfigService } from '../lib/config';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
-import { ApiExcludeController } from '@nestjs/swagger';
 
 interface SessionEnd extends session.Session {
   user: unknown | null;

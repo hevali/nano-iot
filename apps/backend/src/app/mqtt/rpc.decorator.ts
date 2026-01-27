@@ -1,10 +1,10 @@
 import {
   applyDecorators,
   assignMetadata,
+  ParamData,
   PipeTransform,
   SetMetadata,
   Type,
-  ParamData,
 } from '@nestjs/common';
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { ParamsFactory } from '@nestjs/core';

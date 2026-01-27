@@ -1,9 +1,9 @@
 import {
+  CreateDeviceDtoSchema,
   DeviceDtoSchema,
   DeviceMethodSchema,
-  DeviceWithCredentialsDtoSchema,
-  CreateDeviceDtoSchema,
   DevicePropertiesDtoSchema,
+  DeviceWithCredentialsDtoSchema,
 } from '@nano-iot/common';
 import { createZodDto } from 'nestjs-zod';
 

@@ -1,12 +1,13 @@
-import * as path from 'path';
 import { promises as fs } from 'fs';
-import { z } from 'zod';
-import { GeoDevice } from './devices/geo-sensor';
-import { TemperatureSensor } from './devices/temperature-sensor';
-import { MotionSensor } from './devices/motion-sensor';
-import { LightSensor } from './devices/light-sensor';
-import { IoTDevice } from './devices/base';
 import { connectAsync, IClientOptions } from 'mqtt';
+import * as path from 'path';
+import { z } from 'zod';
+
+import { IoTDevice } from './devices/base';
+import { GeoDevice } from './devices/geo-sensor';
+import { LightSensor } from './devices/light-sensor';
+import { MotionSensor } from './devices/motion-sensor';
+import { TemperatureSensor } from './devices/temperature-sensor';
 
 const CONFIG_SCHEMA = z.object({
   device: z.string().min(1),
@@ -122,7 +123,7 @@ async function main() {
     const device = DEVICE_REGISTRY[config.type](config.device);
 
     console.log(
-      `Starting ${config.type} device "${config.device}" connecting to ${config.brokerUrl}`
+      `Starting ${config.type} device "${config.device}" connecting to ${config.brokerUrl}`,
     );
 
     const client = await connectAsync(config.brokerUrl, { ...config.options, ...auth });

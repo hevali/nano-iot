@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
-import { DeviceService } from './device.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { McpModule } from '@rekog/mcp-nest';
+
 import { DeviceController } from './device.controller';
 import { DeviceEntity, DeviceMethodEntity } from './device.entity';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { DeviceMcp } from './device.mcp';
-import { McpModule } from '@rekog/mcp-nest';
+import { DeviceService } from './device.service';
 
 @Module({
   imports: [

@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { Ajv } from 'ajv';
+import { z } from 'zod';
 
 const ajv = new Ajv();
 
@@ -64,7 +64,7 @@ export const CreateDeviceDtoSchema = z.object({
     .regex(/^[a-zA-Z0-9-_]+$/)
     .describe('The unique identifier for the device'),
   configuration: DevicePropertiesDtoSchema.optional().describe(
-    'Initial configuration for the device'
+    'Initial configuration for the device',
   ),
   tags: DevicePropertiesDtoSchema.optional().describe('Initial tags for the device'),
 });

@@ -1,6 +1,3 @@
-import * as crypto from 'crypto';
-import { Injectable } from '@nestjs/common';
-import { Request } from 'express';
 import { AGENT_CARD_PATH, AgentCard, Message } from '@a2a-js/sdk';
 import {
   AgentExecutor,
@@ -10,12 +7,16 @@ import {
   RequestContext,
 } from '@a2a-js/sdk/server';
 import { agentCardHandler, jsonRpcHandler, restHandler } from '@a2a-js/sdk/server/express';
-import { AgentService } from './agent.service';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import * as bcrypt from 'bcrypt';
-import type { TypedConfigService } from '../lib/config';
+import * as crypto from 'crypto';
+import { Request } from 'express';
+
 import { getAuthHeader } from '../lib/auth';
+import type { TypedConfigService } from '../lib/config';
+import { AgentService } from './agent.service';
 
 const AGENT_CARD: Omit<AgentCard, 'url' | 'additionalInterfaces'> = {
   name: 'Nano-IoT Agent',

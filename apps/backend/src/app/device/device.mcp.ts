@@ -1,4 +1,5 @@
 import { Injectable, Scope } from '@nestjs/common';
+
 import { DeviceService } from '../device/device.service';
 import { McpJSONResource, McpJSONResourceTemplate } from '../lib/mcp';
 

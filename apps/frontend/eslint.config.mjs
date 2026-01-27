@@ -1,5 +1,6 @@
-import vue from 'eslint-plugin-vue';
 import prettierConfig from '@vue/eslint-config-prettier';
+import vue from 'eslint-plugin-vue';
+
 import baseConfig from '../../eslint.config.mjs';
 
 export default [

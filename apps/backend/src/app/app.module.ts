@@ -7,27 +7,27 @@ import {
   RequestMethod,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-
-import { MqttModule } from './mqtt/mqtt.module';
-import { DeviceModule } from './device/device.module';
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { McpModule, McpOptions } from '@rekog/mcp-nest';
+import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import * as path from 'path';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+
+import { AgentModule } from './agent/agent.module';
+import { AuthMiddleware, AuthModule } from './auth';
+import { DeviceModule } from './device/device.module';
+import { CONFIG_SCHEMA, TypedConfigService } from './lib/config';
+import { AnyExceptionFilter, TypeormErrorFilter, ZodErrorFilter } from './lib/filters';
+import { BasicAuthGuard } from './lib/guards';
+import { McpController } from './lib/mcp';
 import {
   AddConfigurationAndTagsMigration1767285324438,
   ChatEntityMigration1761017774353,
   DeviceEntityMigration1760757514001,
   DeviceMethodEntityMigration1760757514002,
 } from './migrations';
-import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
-import { AnyExceptionFilter, ZodErrorFilter, TypeormErrorFilter } from './lib/filters';
-import { CONFIG_SCHEMA, TypedConfigService } from './lib/config';
-import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
-import { AgentModule } from './agent/agent.module';
-import { AuthMiddleware, AuthModule } from './auth';
-import { BasicAuthGuard } from './lib/guards';
-import { McpModule, McpOptions } from '@rekog/mcp-nest';
-import { McpController } from './lib/mcp';
+import { MqttModule } from './mqtt/mqtt.module';
 
 @Module({
   imports: [
